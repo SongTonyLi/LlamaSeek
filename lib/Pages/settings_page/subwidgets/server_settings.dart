@@ -35,7 +35,11 @@ class _ServerSettingsState extends State<ServerSettings> {
   String? _cloudErrorText;
   bool _obscureApiKey = true;
 
-  bool get _isCloudMode => _settingsBox.get('isCloudMode', defaultValue: false);
+  final _openwebuiAddressController = TextEditingController();
+  OllamaRequestState _openwebuiRequestState = OllamaRequestState.uninitialized;
+  String? _openwebuiErrorText;
+
+  String get _serverMode => _settingsBox.get('serverMode', defaultValue: 'local');
 
   @override
   void initState() {
@@ -50,15 +54,23 @@ class _ServerSettingsState extends State<ServerSettings> {
 
     if (serverAddress != null) {
       _serverAddressController.text = serverAddress;
-      if (!_isCloudMode) {
+      if (_serverMode == 'local') {
         _handleConnectButton();
       }
     }
 
     if (cloudApiKey != null) {
       _apiKeyController.text = cloudApiKey;
-      if (_isCloudMode) {
+      if (_serverMode == 'cloud') {
         _handleCloudConnectButton();
+      }
+    }
+
+    final openwebuiAddress = _settingsBox.get('openwebuiAddress');
+    if (openwebuiAddress != null) {
+      _openwebuiAddressController.text = openwebuiAddress;
+      if (_serverMode == 'openwebui') {
+        _handleOpenWebuiConnect();
       }
     }
   }
@@ -67,12 +79,15 @@ class _ServerSettingsState extends State<ServerSettings> {
   void dispose() {
     _serverAddressController.dispose();
     _apiKeyController.dispose();
+    _openwebuiAddressController.dispose();
 
     super.dispose();
   }
 
-  void _setCloudMode(bool value) {
-    _settingsBox.put('isCloudMode', value);
+  void _setServerMode(String value) {
+    _settingsBox.put('serverMode', value);
+    // Backward compat: keep isCloudMode for existing code that reads it
+    _settingsBox.put('isCloudMode', value == 'cloud');
     setState(() {});
   }
 
@@ -90,27 +105,37 @@ class _ServerSettingsState extends State<ServerSettings> {
         const SizedBox(height: 16),
         SizedBox(
           width: double.infinity,
-          child: SegmentedButton<bool>(
+          child: SegmentedButton<String>(
             segments: const [
               ButtonSegment(
-                value: false,
+                value: 'local',
                 label: Text('Local'),
                 icon: Icon(Icons.dns_outlined),
               ),
               ButtonSegment(
-                value: true,
+                value: 'openwebui',
+                label: Text('Open-webui'),
+                icon: Icon(Icons.language_outlined),
+              ),
+              ButtonSegment(
+                value: 'cloud',
                 label: Text('Cloud'),
                 icon: Icon(Icons.cloud_outlined),
               ),
             ],
-            selected: {_isCloudMode},
+            selected: {_serverMode},
             onSelectionChanged: (selection) {
-              _setCloudMode(selection.first);
+              _setServerMode(selection.first);
             },
           ),
         ),
         const SizedBox(height: 16),
-        if (_isCloudMode) _buildCloudSettings(context) else _buildLocalSettings(context),
+        if (_serverMode == 'cloud')
+          _buildCloudSettings(context)
+        else if (_serverMode == 'openwebui')
+          _buildOpenWebuiSettings(context)
+        else
+          _buildLocalSettings(context),
       ],
     );
   }
@@ -222,6 +247,94 @@ class _ServerSettingsState extends State<ServerSettings> {
         ),
       ],
     );
+  }
+
+  Widget _buildOpenWebuiSettings(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: _openwebuiAddressController,
+          keyboardType: TextInputType.url,
+          onChanged: (_) {
+            setState(() {
+              _openwebuiErrorText = null;
+              _openwebuiRequestState = OllamaRequestState.uninitialized;
+            });
+          },
+          decoration: InputDecoration(
+            labelText: 'Open-webui Server Address',
+            hintText: 'http://localhost:3000',
+            border: const OutlineInputBorder(),
+            errorText: _openwebuiErrorText,
+          ),
+          onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Enter the URL of your Open-webui instance. It runs locally alongside Ollama.',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _openwebuiRequestState == OllamaRequestState.loading
+                ? null
+                : _handleOpenWebuiConnect,
+            child: _ConnectionStatusIndicator(
+              color: _openwebuiConnectionColor,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Color get _openwebuiConnectionColor {
+    switch (_openwebuiRequestState) {
+      case OllamaRequestState.error:
+        return Colors.red;
+      case OllamaRequestState.loading:
+        return Colors.orange;
+      case OllamaRequestState.success:
+        return Colors.green;
+      case OllamaRequestState.uninitialized:
+        return Colors.grey;
+    }
+  }
+
+  Future<void> _handleOpenWebuiConnect() async {
+    setState(() {
+      _openwebuiErrorText = null;
+      _openwebuiRequestState = OllamaRequestState.loading;
+    });
+
+    try {
+      final address = _validateServerAddress(_openwebuiAddressController.text);
+      final url = Uri.parse(address);
+      final response = await http.head(url).timeout(const Duration(seconds: 5));
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        _openwebuiRequestState = OllamaRequestState.success;
+        _settingsBox.put('openwebuiAddress', address);
+      } else {
+        _openwebuiErrorText = 'Connection failed (${response.statusCode}).';
+        _openwebuiRequestState = OllamaRequestState.error;
+      }
+    } on OllamaException catch (e) {
+      _openwebuiErrorText = e.message;
+      _openwebuiRequestState = OllamaRequestState.error;
+    } catch (_) {
+      _openwebuiErrorText = 'Could not connect to Open-webui server.';
+      _openwebuiRequestState = OllamaRequestState.error;
+    } finally {
+      setState(() {});
+    }
   }
 
   Color get _connectionStatusColor {
