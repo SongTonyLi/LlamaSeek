@@ -9,7 +9,7 @@ import 'package:url_launcher/url_launcher_string.dart';
 import 'chat_bubble_actions.dart';
 import 'chat_bubble_image.dart';
 import 'chat_bubble_menu.dart';
-import 'chat_bubble_think_block.dart';
+import 'chat_bubble_think_block.dart' show ThinkBlockParser, ThinkBlockWidget;
 
 class ChatBubble extends StatelessWidget {
   final OllamaMessage message;
@@ -93,26 +93,7 @@ class _ChatBubbleBody extends StatelessWidget {
                   : Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(10.0),
             ),
-            child: MarkdownBody(
-              data: message.content,
-              selectable: true,
-              softLineBreak: true,
-              styleSheet: context.markdownStyleSheet.copyWith(
-                code: GoogleFonts.sourceCodePro(),
-              ),
-              builders: {'think': ThinkBlockBuilder()},
-              extensionSet: md.ExtensionSet(
-                <md.BlockSyntax>[
-                  ThinkBlockSyntax(),
-                  ...md.ExtensionSet.gitHubFlavored.blockSyntaxes
-                ],
-                <md.InlineSyntax>[
-                  md.EmojiSyntax(),
-                  ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes
-                ],
-              ),
-              onTapLink: (text, href, title) => launchUrlString(href!),
-            ),
+            child: _buildMessageContent(context),
           ),
           Text(
             TimeOfDay.fromDateTime(message.createdAt.toLocal()).format(context),
@@ -122,6 +103,40 @@ class _ChatBubbleBody extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMessageContent(BuildContext context) {
+    final parsed = ThinkBlockParser.tryParse(message.content);
+
+    if (parsed != null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (parsed.thinkContent.isNotEmpty)
+            ThinkBlockWidget(
+              content: parsed.thinkContent,
+              isComplete: parsed.isThinkingComplete,
+            ),
+          if (parsed.responseContent.isNotEmpty)
+            _buildMarkdown(context, parsed.responseContent),
+        ],
+      );
+    }
+
+    return _buildMarkdown(context, message.content);
+  }
+
+  Widget _buildMarkdown(BuildContext context, String data) {
+    return MarkdownBody(
+      data: data,
+      selectable: true,
+      softLineBreak: true,
+      styleSheet: context.markdownStyleSheet.copyWith(
+        code: GoogleFonts.sourceCodePro(),
+      ),
+      extensionSet: md.ExtensionSet.gitHubFlavored,
+      onTapLink: (text, href, title) => launchUrlString(href!),
     );
   }
 

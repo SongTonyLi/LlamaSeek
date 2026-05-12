@@ -1,65 +1,58 @@
 import 'package:flutter/material.dart';
-import 'package:markdown/markdown.dart' as md;
-import 'package:flutter_markdown/flutter_markdown.dart';
 
-class ThinkBlockSyntax extends md.BlockSyntax {
-  @override
-  RegExp get pattern => RegExp(r'^<think>$');
+/// Parses message content into thinking and response parts.
+class ThinkBlockParser {
+  final String thinkContent;
+  final String responseContent;
+  final bool isThinkingComplete;
 
-  @override
-  bool canEndBlock(md.BlockParser parser) => false;
+  ThinkBlockParser._({
+    required this.thinkContent,
+    required this.responseContent,
+    required this.isThinkingComplete,
+  });
 
-  const ThinkBlockSyntax();
+  /// Returns null if content has no <think> block.
+  static ThinkBlockParser? tryParse(String content) {
+    if (!content.trimLeft().startsWith('<think>')) return null;
 
-  @override
-  List<md.Line> parseChildLines(md.BlockParser parser) {
-    final childLines = <md.Line>[];
+    final openTag = '<think>';
+    final closeTag = '</think>';
+    final openIndex = content.indexOf(openTag);
+    final closeIndex = content.indexOf(closeTag);
 
-    parser.advance(); // Advance past the opening <think> tag
-
-    while (!parser.isDone) {
-      if (parser.current.content == '</think>') {
-        parser.advance(); // Advance past the closing </think> tag
-        break;
-      }
-
-      childLines.add(parser.current);
-      parser.advance();
+    if (closeIndex == -1) {
+      // Still thinking — no closing tag yet
+      final thinkContent = content.substring(openIndex + openTag.length).trim();
+      return ThinkBlockParser._(
+        thinkContent: thinkContent,
+        responseContent: '',
+        isThinkingComplete: false,
+      );
+    } else {
+      // Thinking is complete
+      final thinkContent =
+          content.substring(openIndex + openTag.length, closeIndex).trim();
+      final responseContent =
+          content.substring(closeIndex + closeTag.length).trim();
+      return ThinkBlockParser._(
+        thinkContent: thinkContent,
+        responseContent: responseContent,
+        isThinkingComplete: true,
+      );
     }
-
-    return childLines;
-  }
-
-  @override
-  md.Node parse(md.BlockParser parser) {
-    // Check if we'll find a closing </think> tag
-    final hasClosingTag = parser.lines.any((l) => l.content == '</think>');
-
-    final childLines = parseChildLines(parser);
-    var content = childLines.map((e) => e.content).join('\n');
-
-    final element = md.Element('pre', [md.Element.text('think', content)]);
-    element.attributes['closed'] = hasClosingTag.toString();
-    return element;
   }
 }
 
-class ThinkBlockBuilder extends MarkdownElementBuilder {
-  @override
-  Widget visitElementAfter(md.Element element, TextStyle? preferredStyle) {
-    final isClosed = element.attributes['closed'] == 'true';
-    return ThinkBlockWidget(content: element.textContent, isClosed: isClosed);
-  }
-}
-
+/// Collapsible thinking block widget.
 class ThinkBlockWidget extends StatefulWidget {
   final String content;
-  final bool isClosed;
+  final bool isComplete;
 
   const ThinkBlockWidget({
     super.key,
     required this.content,
-    this.isClosed = true,
+    required this.isComplete,
   });
 
   @override
@@ -67,33 +60,68 @@ class ThinkBlockWidget extends StatefulWidget {
 }
 
 class _ThinkBlockWidgetState extends State<ThinkBlockWidget> {
-  late bool _showingThought = !widget.isClosed;
+  bool? _userToggle;
+
+  bool get _isExpanded {
+    if (_userToggle != null) return _userToggle!;
+    // Auto: expanded while streaming, collapsed when complete
+    return !widget.isComplete;
+  }
+
+  @override
+  void didUpdateWidget(ThinkBlockWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Auto-collapse when thinking completes (only if user hasn't toggled)
+    if (!oldWidget.isComplete && widget.isComplete && _userToggle == null) {
+      _userToggle = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.secondary;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         InkWell(
+          borderRadius: BorderRadius.circular(8),
           onTap: () {
-            setState(() => _showingThought = !_showingThought);
+            setState(() => _userToggle = !_isExpanded);
           },
-          child: Row(
-            children: [
-              Text('Thought', style: TextStyle(color: _thoughtColor)),
-              Icon(_thoughtButtonIcon, color: _thoughtColor),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4.0),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _isExpanded
+                      ? Icons.keyboard_arrow_down
+                      : Icons.keyboard_arrow_right,
+                  color: color,
+                  size: 20,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  widget.isComplete ? 'Thought' : 'Thinking...',
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        if (_showingThought)
-          SelectableText(widget.content,
-              style: TextStyle(color: _thoughtColor)),
+        if (_isExpanded)
+          Padding(
+            padding: const EdgeInsets.only(left: 24.0, top: 4.0, bottom: 8.0),
+            child: SelectableText(
+              widget.content,
+              style: TextStyle(color: color, fontSize: 13, height: 1.4),
+            ),
+          ),
       ],
     );
   }
-
-  IconData get _thoughtButtonIcon =>
-      _showingThought ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up;
-
-  Color get _thoughtColor => Theme.of(context).colorScheme.secondary;
 }
