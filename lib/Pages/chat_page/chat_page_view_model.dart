@@ -296,7 +296,7 @@ class ChatPageViewModel extends ChangeNotifier {
         try {
           debugPrint('[WebSearch] Searching for: $prompt');
           final searchService = WebSearchService();
-          final searchResults = await searchService.search(prompt);
+          final searchResults = await searchService.searchAndFetch(prompt);
           debugPrint('[WebSearch] Got ${searchResults.length} results');
           if (searchResults.isNotEmpty) {
             searchContext = WebSearchService.formatResultsAsContext(searchResults, prompt);
@@ -326,7 +326,7 @@ class ChatPageViewModel extends ChangeNotifier {
         try {
           debugPrint('[WebSearch] Searching for: $prompt');
           final searchService = WebSearchService();
-          final searchResults = await searchService.search(prompt);
+          final searchResults = await searchService.searchAndFetch(prompt);
           debugPrint('[WebSearch] Got ${searchResults.length} results');
           if (searchResults.isNotEmpty) {
             searchContext = WebSearchService.formatResultsAsContext(searchResults, prompt);
