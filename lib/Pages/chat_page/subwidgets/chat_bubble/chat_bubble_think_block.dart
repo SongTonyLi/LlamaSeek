@@ -32,32 +32,42 @@ class ThinkBlockSyntax extends md.BlockSyntax {
 
   @override
   md.Node parse(md.BlockParser parser) {
-    final childLines = parseChildLines(parser);
+    // Check if we'll find a closing </think> tag
+    final hasClosingTag = parser.lines.any((l) => l.content == '</think>');
 
+    final childLines = parseChildLines(parser);
     var content = childLines.map((e) => e.content).join('\n');
 
-    return md.Element('pre', [md.Element.text('think', content)]);
+    final element = md.Element('pre', [md.Element.text('think', content)]);
+    element.attributes['closed'] = hasClosingTag.toString();
+    return element;
   }
 }
 
 class ThinkBlockBuilder extends MarkdownElementBuilder {
   @override
   Widget visitElementAfter(md.Element element, TextStyle? preferredStyle) {
-    return ThinkBlockWidget(content: element.textContent);
+    final isClosed = element.attributes['closed'] == 'true';
+    return ThinkBlockWidget(content: element.textContent, isClosed: isClosed);
   }
 }
 
 class ThinkBlockWidget extends StatefulWidget {
   final String content;
+  final bool isClosed;
 
-  const ThinkBlockWidget({super.key, required this.content});
+  const ThinkBlockWidget({
+    super.key,
+    required this.content,
+    this.isClosed = true,
+  });
 
   @override
   State<ThinkBlockWidget> createState() => _ThinkBlockWidgetState();
 }
 
 class _ThinkBlockWidgetState extends State<ThinkBlockWidget> {
-  bool _showingThought = false;
+  late bool _showingThought = !widget.isClosed;
 
   @override
   Widget build(BuildContext context) {
