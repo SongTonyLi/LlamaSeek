@@ -1,254 +1,263 @@
-# Open-webui Integration Design
+# Open-webui Integration Design (v2 — WebView Hybrid)
 
 ## Problem
 
-The Reins Flutter app connects directly to Ollama and lacks four features:
-1. **Thinking tokens not streamed** — `OllamaMessage.fromJson()` only reads `message.content`, ignoring `message.thinking`
-2. **No internet search** — Not implemented at all
-3. **Attachments limited to images** — Only `ImagePicker` for photos, no documents
-4. **No LaTeX rendering** — Uses `flutter_markdown` with GitHub Flavored Markdown only; math expressions (`$...$`, `$$...$$`) render as raw text
+The Reins Flutter app connects directly to Ollama and lacks:
+1. Thinking token streaming
+2. Internet search
+3. File attachments beyond images
+4. LaTeX rendering
+5. Artifact rendering (HTML/SVG code output)
+6. Many other features open-webui already provides
 
-## Solution
+## Solution: WebView Hybrid
 
-Add open-webui as a backend option. Open-webui runs locally (like Ollama on `localhost:11434`, open-webui on `localhost:3000`) and already handles all three features server-side. The Flutter app just needs a new API client that speaks the OpenAI-compatible protocol.
+Instead of reimplementing each feature natively in Flutter, embed open-webui's PWA in a WebView. Open-webui already runs locally, is mobile-optimized (PWA), and handles all rendering and features server-side.
+
+The Flutter app becomes a **native iOS shell** around the open-webui web UI.
+
+```
+Before:  Flutter native UI  →  Ollama API
+After:   Flutter shell  →  WebView (open-webui PWA)  →  Ollama
+```
+
+## What We Get For Free (from open-webui's PWA)
+
+All of these work immediately with zero Flutter code:
+- Thinking token streaming and display (collapsible blocks)
+- Web search with 28+ providers
+- File attachments (PDF, DOCX, CSV, TXT, code, etc.)
+- Full Markdown + LaTeX (KaTeX) rendering
+- Artifact rendering (HTML/SVG in sandboxed iframe)
+- Code syntax highlighting
+- Image generation (DALL-E, ComfyUI)
+- Voice/video calls (STT/TTS)
+- Multi-model conversations
+- RAG with local documents
+- Model management (create, configure)
+- Chat history, folders, tags
+- User authentication, RBAC
+- Notes/persistent storage
+
+## What Flutter Adds (native value)
+
+- **App Store distribution** — iOS App Store presence
+- **Native app lifecycle** — proper backgrounding, state restoration
+- **Native file picker bridge** — enhanced file selection via `flutter_inappwebview`'s file upload handling
+- **Native sharing** — share chat content via iOS share sheet
+- **Persistent connection** — auto-reconnect, connection status indicators
+- **Setup flow** — first-launch configuration for open-webui URL
+- **App icon, splash screen** — existing native branding (already implemented)
 
 ## Architecture
 
+### App Structure
+
 ```
-Current:  Flutter app  →  Ollama API (/api/chat)
-New:      Flutter app  →  Open-webui API (/api/chat/completions)  →  Ollama
+┌─────────────────────────────┐
+│  Flutter App Shell           │
+│  ┌───────────────────────┐  │
+│  │  Setup Page            │  │  ← First launch: enter open-webui URL
+│  │  (native Flutter)      │  │
+│  └───────────────────────┘  │
+│  ┌───────────────────────┐  │
+│  │  WebView Page          │  │  ← Main experience: full-screen WebView
+│  │  (open-webui PWA)      │  │     loading open-webui at configured URL
+│  │  ┌─────────────────┐  │  │
+│  │  │ open-webui UI    │  │  │  ← All chat, rendering, features
+│  │  │ (Svelte PWA)     │  │  │
+│  │  └─────────────────┘  │  │
+│  └───────────────────────┘  │
+│  ┌───────────────────────┐  │
+│  │  Connection Overlay    │  │  ← Shows when open-webui is unreachable
+│  │  (native Flutter)      │  │
+│  └───────────────────────┘  │
+└─────────────────────────────┘
 ```
 
-Both backend modes coexist. User selects in Settings. Direct Ollama mode is unchanged (with thinking token fix applied). Open-webui mode enables all three features.
+### Pages
 
-## Feature 1: Thinking Token Streaming
+1. **Setup Page** (native Flutter)
+   - Shown on first launch or when no URL is configured
+   - Text field for open-webui URL (default: `http://localhost:3000`)
+   - "Connect" button that validates the URL (HEAD request)
+   - Stores URL in Hive settings
+   - Optional: open-webui API key field for authentication
 
-### Direct Ollama mode (fix)
-- `OllamaMessage.fromJson()` now reads `json["message"]["thinking"]`
-- Add `String? thinking` field to `OllamaMessage`
-- During streaming, accumulate `thinking` separately: `streamingMessage.thinking += received.thinking`
-- `toChatJson()` includes `thinking` field for multi-turn context
-- Store `thinking` in database (new column)
+2. **WebView Page** (main experience)
+   - Full-screen `InAppWebView` loading the configured open-webui URL
+   - Handles all navigation within open-webui
+   - External links open in Safari
+   - Pull-to-refresh support
+   - JavaScript bridge for native features
+   - Cookie persistence for login session
 
-### Open-webui mode
-- SSE delta includes `reasoning_content` field alongside `content`
-- Parse both from each chunk: `delta["content"]` and `delta["reasoning_content"]`
-- Map `reasoning_content` → `OllamaMessage.thinking`
-- Same accumulation and storage as above
+3. **Connection Overlay** (native Flutter)
+   - Shown over WebView when open-webui is unreachable
+   - Retry button, option to change server URL
+   - Auto-dismiss when connection is restored
 
-### UI (both modes)
-- Existing `ThinkBlockWidget` works as-is — just fed from `message.thinking` instead of parsing `<think>` tags from content
-- Keep `<think>` tag fallback for models that embed inline (e.g., title generation)
-- `ChatBubble._buildMessageContent()` checks `message.thinking` first, falls back to `ThinkBlockParser.tryParse()`
+## Technical Details
 
-## Feature 2: Internet Search
+### Package: `flutter_inappwebview`
 
-### How it works
-- User taps globe toggle icon in the input bar (next to `+` button)
-- Toggle state stored in `ChatPageViewModel.webSearchEnabled`
-- When sending a message with search enabled, the request includes `"features": {"web_search": true}`
-- Open-webui server handles everything: query generation, search API calls, page fetching, RAG context injection
-- Response streams back with search-informed content
-- Source URLs returned in the SSE stream's top-level `sources` field
+Chosen over `webview_flutter` because it provides:
+- File upload handling (crucial for attachments)
+- Cookie persistence (login session)
+- JavaScript injection and communication
+- Custom URL scheme handling
+- Download handling
+- Camera/microphone permissions (for voice features)
+- Pull-to-refresh
+- Better iOS WKWebView integration
 
-### UI
-- Globe icon button between `+` (attachments) and the text field
-- Active state: filled icon with accent color
-- The `sources` from the response are displayed below the message bubble as tappable URL chips
-- "Searching the web..." status shown during the search phase (before content starts streaming)
+### WebView Configuration
 
-### Direct Ollama mode
-- Search toggle hidden (not supported without open-webui)
+```dart
+InAppWebView(
+  initialUrlRequest: URLRequest(url: WebUri(openwebuiUrl)),
+  initialSettings: InAppWebViewSettings(
+    // Allow file uploads
+    allowFileAccessFromFileURLs: true,
+    // Allow media playback
+    mediaPlaybackRequiresUserGesture: false,
+    // Allow inline media playback (for voice/video)
+    allowsInlineMediaPlayback: true,
+    // Allow JavaScript
+    javaScriptEnabled: true,
+    // Enable DOM storage for PWA
+    domStorageEnabled: true,
+    // Allow mixed content (if open-webui is HTTP)
+    mixedContentMode: MixedContentMode.MIXED_CONTENT_ALWAYS_ALLOW,
+    // User agent to identify as native app
+    userAgent: 'Reins/1.4.0 (iOS; Flutter WebView)',
+    // Transparent background during load
+    transparentBackground: true,
+  ),
+)
+```
 
-## Feature 3: File Attachments
+### File Upload Handling
 
-### How it works
-- `+` button shows a bottom sheet: "Photo Library" / "Choose File"
-- "Photo Library" — existing `ImagePicker` flow (unchanged)
-- "Choose File" — uses `file_picker` package, allows any file type
-- Selected file is uploaded to open-webui: `POST /api/v1/files/` (multipart form data)
-- Server returns file object with `id`
-- File ID included in chat request: `"files": [{"type": "file", "id": "file-uuid"}]`
-- Open-webui extracts text (PDF, DOCX, TXT, CSV, etc.), embeds, and injects as RAG context
+`flutter_inappwebview` handles `<input type="file">` natively on iOS via `onShowFileChooser`. This means open-webui's file upload button works out of the box — the WebView presents the native iOS file picker automatically.
 
-### UI
-- File attachments shown as chips in the attachment row (filename + file type icon + remove button)
-- Image attachments continue to show as thumbnail previews
-- Both file chips and image thumbnails coexist in the same attachment row
+### Cookie & Session Persistence
 
-### Direct Ollama mode
-- File picker hidden for non-image files (not supported without open-webui)
-- Image attachment works as before (base64 in message)
+`CookieManager.instance()` from `flutter_inappwebview` persists cookies across app launches. User logs into open-webui once, stays logged in.
 
-## Feature 4: Full Markdown and LaTeX Support
+### Navigation Handling
 
-### Current state
-- `flutter_markdown` with `ExtensionSet.gitHubFlavored` — handles headings, bold, italic, links, code blocks, tables, lists
-- No LaTeX/math rendering — inline `$E=mc^2$` and display `$$\int_0^1 f(x)dx$$` show as raw text
-- Open-webui renders full LaTeX via KaTeX in the browser
+```dart
+shouldOverrideUrlLoading: (controller, action) {
+  final url = action.request.url;
+  // Keep open-webui navigation inside WebView
+  if (url?.host == openwebuiHost) {
+    return NavigationActionPolicy.ALLOW;
+  }
+  // External links open in Safari
+  launchUrl(url!);
+  return NavigationActionPolicy.CANCEL;
+}
+```
 
-### Solution
-- Add `flutter_markdown_latex` package — extends `flutter_markdown` with LaTeX support using `flutter_math_fork` under the hood
-- Minimal change: add the LaTeX builder to the existing `MarkdownBody` widget's `builders` parameter
-- Handles both inline `$...$` and display `$$...$$` math expressions
-- Works with both backend modes (Ollama direct and open-webui) since it's purely a rendering concern
+### Connection Health Check
 
-### Changes
-- `pubspec.yaml` — add `flutter_markdown_latex` dependency
-- `chat_bubble.dart` — add `LatexElementBuilder` to `MarkdownBody.builders`
-- `chat_bubble_think_block.dart` — use same Markdown+LaTeX renderer for thinking content (instead of plain `SelectableText`)
+Periodic HEAD request to the open-webui URL to detect disconnections:
+```dart
+Timer.periodic(Duration(seconds: 10), (_) async {
+  try {
+    await http.head(Uri.parse(openwebuiUrl)).timeout(Duration(seconds: 3));
+    setState(() => isConnected = true);
+  } catch (_) {
+    setState(() => isConnected = false);
+  }
+});
+```
+
+### JavaScript Bridge (optional, for native enhancements)
+
+```dart
+webViewController.addJavaScriptHandler(
+  handlerName: 'nativeShare',
+  callback: (args) {
+    Share.share(args[0] as String);
+  },
+);
+```
 
 ## New Files
 
-### `lib/Services/openwebui_service.dart`
-OpenAI-compatible API client. Key methods:
-- `chatCompletionStream()` — POST `/api/chat/completions`, returns `Stream<ChatCompletionChunk>`
-- `uploadFile()` — POST `/api/v1/files/`, returns file ID
-- `listModels()` — GET `/api/models`, returns available models
-- `deleteFile()` — DELETE `/api/v1/files/{id}`
+### `lib/Pages/webview_page.dart`
+Main WebView page wrapping open-webui PWA. Handles:
+- WebView initialization and configuration
+- Navigation policy (internal vs external links)
+- File upload delegation to native iOS picker
+- Connection status monitoring
+- Pull-to-refresh
+- Back button navigation (WebView history)
+- JavaScript bridge setup
 
-SSE parser: split on `\n`, strip `data: ` prefix, parse JSON, detect `[DONE]`.
+### `lib/Pages/setup_page.dart`
+First-launch setup page:
+- Open-webui URL input with validation
+- Connection test
+- Stores config in Hive
 
-### `lib/Models/chat_completion_chunk.dart`
-Data model for OpenAI SSE chunks:
-- `choices[0].delta.content`
-- `choices[0].delta.reasoning_content`
-- `choices[0].finish_reason`
-- Top-level `sources` (search results)
-
-### `lib/Models/uploaded_file.dart`
-Data model for uploaded file reference:
-- `id` — UUID from open-webui
-- `filename` — display name
-- `type` — "file"
+### `lib/Widgets/connection_overlay.dart`
+Overlay shown when open-webui is unreachable:
+- "Cannot connect to server" message
+- Retry button
+- "Change server" button
 
 ## Modified Files
 
-### `lib/Models/ollama_message.dart`
-- Add `String? thinking` field
-- Parse `thinking` from both Ollama (`message.thinking`) and OpenAI (`reasoning_content`) formats
-- `toChatJson()` includes `thinking` when present
-- `toDatabaseMap()` / `fromDatabase()` handle new `thinking` column
-- `updateMetadataFrom()` copies thinking field
-- Add `List<String>? sources` for search result URLs
-
-### `lib/Services/ollama_service.dart`
-- `_processStream()` unchanged (already works, just needs `fromJson` fix in OllamaMessage)
-
-### `lib/Services/database_service.dart`
-- Add `thinking` TEXT column to messages table (migration)
-- Add `sources` TEXT column (JSON-encoded list of URLs)
-
-### `lib/Providers/chat_provider.dart`
-- `_streamOllamaMessage()` accumulates `thinking` alongside `content`
-- New method `_streamOpenWebUIMessage()` for the OpenAI SSE path
-- `sendPrompt()` accepts `webSearchEnabled` and `files` parameters
-- Route to correct streaming method based on backend mode
-
-### `lib/Pages/chat_page/chat_page_view_model.dart`
-- Add `bool webSearchEnabled` toggle state
-- Add `List<UploadedFile> _attachedFiles` for non-image files
-- `pickFile()` method using `file_picker`, uploads to open-webui
-- `removeFile()` method, deletes from open-webui
-- `sendMessage()` passes search and file params to provider
+### `lib/main.dart`
+- Route to setup page if no URL configured, otherwise WebView page
+- Remove native chat providers if in open-webui mode (optional: keep for direct Ollama fallback)
 
 ### `lib/Pages/chat_page/chat_page.dart`
-- Add globe toggle button in input bar (between `+` and text field)
-- `_handleAttachmentButton()` shows bottom sheet with "Photo Library" / "Choose File"
-- Conditionally show/hide search toggle and file option based on backend mode
-
-### `lib/Pages/chat_page/subwidgets/chat_bubble/chat_bubble.dart`
-- `_buildMessageContent()` checks `message.thinking` field first, then falls back to `ThinkBlockParser`
-- Add sources display below message when `message.sources` is not empty
-
-### `lib/Pages/chat_page/subwidgets/chat_text_field.dart`
-- Support additional action buttons (search toggle) — passed via new parameter or widget composition
-
-### `lib/Pages/settings_page/`
-- Backend mode selector: "Ollama Direct" / "Open-webui"
-- Open-webui URL field (default: `http://localhost:3000`)
-- Open-webui API key field
-- Stored in Hive settings box
+- Keep existing native chat as fallback for direct Ollama mode
+- Or remove entirely if going all-in on open-webui
 
 ### `pubspec.yaml`
-- Add `file_picker` dependency
-- Add `flutter_markdown_latex` dependency (brings `flutter_math_fork` transitively)
+- Add `flutter_inappwebview: ^6.0.0`
+- Keep existing dependencies (used by direct Ollama fallback, or remove if going all-in)
 
 ## Settings & Configuration
 
-New Hive settings keys:
-- `backendMode` — `"ollama"` (default) or `"openwebui"`
-- `openwebuiAddress` — URL string (default: `http://localhost:3000`)
-- `openwebuiApiKey` — Bearer token string
+Hive settings keys:
+- `openwebuiUrl` — URL string (default: `http://localhost:3000`)
+- `hasCompletedSetup` — bool, controls first-launch routing
 
-## Database Migration
+## Migration Path
 
-Add to existing messages table:
-```sql
-ALTER TABLE messages ADD COLUMN thinking TEXT;
-ALTER TABLE messages ADD COLUMN sources TEXT;
-```
+### Phase 1 (this implementation)
+- Add WebView page as the primary experience when open-webui URL is configured
+- Keep existing native chat page as fallback for direct Ollama (no open-webui)
+- User chooses mode in setup: "Connect to Open-webui" or "Connect to Ollama directly"
 
-Handle migration in `DatabaseService.open()` via version increment.
-
-## SSE Parsing (Open-webui path)
-
-Port from open-webui's `streaming/index.ts`:
-```dart
-Stream<ChatCompletionChunk> _processSSEStream(Stream<String> stream) async* {
-  String buffer = '';
-  await for (var chunk in stream) {
-    buffer += chunk;
-    final lines = buffer.split('\n');
-    buffer = lines.removeLast(); // Keep incomplete line
-
-    for (final line in lines) {
-      final trimmed = line.trim();
-      if (trimmed.isEmpty) continue;
-      if (!trimmed.startsWith('data: ')) continue;
-
-      final data = trimmed.substring(6);
-      if (data.startsWith('[DONE]')) return;
-
-      final json = jsonDecode(data);
-      yield ChatCompletionChunk.fromJson(json);
-    }
-  }
-}
-```
-
-## Request Format (Open-webui path)
-
-```json
-{
-  "model": "deepseek-r1:latest",
-  "messages": [
-    {"role": "system", "content": "..."},
-    {"role": "user", "content": "What is quantum computing?"}
-  ],
-  "stream": true,
-  "features": {
-    "web_search": true
-  },
-  "files": [
-    {"type": "file", "id": "abc-123-def"}
-  ]
-}
-```
+### Phase 2 (future, optional)
+- Remove native chat UI entirely if open-webui mode proves sufficient
+- Add deeper native integrations (push notifications via open-webui webhooks, Siri shortcuts, widgets)
 
 ## Error Handling
 
-- Open-webui server unreachable: show connection error (same pattern as existing Ollama errors)
-- File upload fails: show error toast, don't send message
-- Search fails server-side: open-webui handles gracefully, response still works without search context
-- Invalid API key: 401/403 → "Invalid API key" error message
+- **Open-webui unreachable**: Show connection overlay with retry
+- **SSL errors**: Allow self-signed certs option in setup (common for local servers)
+- **WebView crash**: Auto-reload with error message
+- **Login expired**: WebView naturally shows open-webui login page
 
 ## Testing Plan
 
-- Thinking tokens: test with DeepSeek-R1 model, verify streaming display + collapse behavior
-- Search: toggle on, send question, verify response includes web context and source URLs
-- Files: upload PDF and TXT, verify content is used in response
-- Backend switching: verify Ollama direct mode still works unchanged
-- Persistence: verify thinking content and sources survive app restart (DB storage)
-- LaTeX: verify inline `$...$` and display `$$...$$` render correctly in chat bubbles and thinking blocks
-- iOS simulator: test all four features end-to-end
+- Setup flow: enter URL, validate connection, proceed to WebView
+- WebView loads: open-webui UI renders correctly on iOS simulator
+- Thinking tokens: test with DeepSeek-R1, verify streaming + collapse in WebView
+- Web search: toggle search in open-webui UI, verify results
+- File attachments: tap upload in open-webui, verify native file picker appears
+- LaTeX: send math question, verify KaTeX renders in WebView
+- Artifacts: ask model to generate HTML, verify artifact panel renders
+- Session persistence: close and reopen app, verify still logged in
+- Connection loss: stop open-webui server, verify overlay appears, restart, verify auto-recovery
+- Back navigation: iOS back swipe navigates WebView history correctly
+- External links: links to external sites open in Safari
+- iOS simulator: full end-to-end test of all features
