@@ -1,6 +1,3 @@
-import 'dart:async';
-
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class WebSearchResult {
@@ -77,7 +74,6 @@ class WebSearchService {
         result.pageContent = _extractTextFromHtml(response.body);
       }
     } catch (e) {
-      debugPrint('[WebSearch] Failed to fetch ${result.url}: $e');
       // Keep snippet as fallback — don't fail the whole search
     }
   }

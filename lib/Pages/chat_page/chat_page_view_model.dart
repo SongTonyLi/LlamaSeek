@@ -295,20 +295,16 @@ class ChatPageViewModel extends ChangeNotifier {
       Map<int, String>? sourceUrls;
       if (_webSearchEnabled) {
         try {
-          debugPrint('[WebSearch] Searching for: $prompt');
           final searchService = WebSearchService();
           final searchResults = await searchService.searchAndFetch(prompt);
-          debugPrint('[WebSearch] Got ${searchResults.length} results');
           if (searchResults.isNotEmpty) {
             searchContext = WebSearchService.formatResultsAsContext(searchResults, prompt);
             sourceUrls = {
               for (var i = 0; i < searchResults.length; i++)
                 i + 1: searchResults[i].url,
             };
-            debugPrint('[WebSearch] Context length: ${searchContext.length}');
           }
-        } catch (e) {
-          debugPrint('[WebSearch] Error: $e');
+        } catch (_) {
         }
       }
 
@@ -330,20 +326,16 @@ class ChatPageViewModel extends ChangeNotifier {
       Map<int, String>? sourceUrls;
       if (_webSearchEnabled) {
         try {
-          debugPrint('[WebSearch] Searching for: $prompt');
           final searchService = WebSearchService();
           final searchResults = await searchService.searchAndFetch(prompt);
-          debugPrint('[WebSearch] Got ${searchResults.length} results');
           if (searchResults.isNotEmpty) {
             searchContext = WebSearchService.formatResultsAsContext(searchResults, prompt);
             sourceUrls = {
               for (var i = 0; i < searchResults.length; i++)
                 i + 1: searchResults[i].url,
             };
-            debugPrint('[WebSearch] Context length: ${searchContext.length}');
           }
-        } catch (e) {
-          debugPrint('[WebSearch] Error: $e');
+        } catch (_) {
         }
       }
 
