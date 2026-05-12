@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:reins/Pages/chat_page/chat_page.dart';
+import 'package:reins/Pages/openwebui_page.dart';
 import 'package:reins/Widgets/chat_app_bar.dart';
 import 'package:reins/Widgets/chat_drawer.dart';
 import 'package:responsive_framework/responsive_framework.dart';
@@ -9,16 +11,30 @@ class ReinsMainPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (ResponsiveBreakpoints.of(context).isMobile) {
-      return _ReinsMobileMainPage();
-    } else {
-      return _ReinsLargeMainPage();
-    }
+    return ValueListenableBuilder(
+      valueListenable: Hive.box('settings').listenable(
+        keys: ['serverMode', 'openwebuiAddress'],
+      ),
+      builder: (context, box, _) {
+        final serverMode = box.get('serverMode', defaultValue: 'local');
+        final openwebuiAddress = box.get('openwebuiAddress');
+
+        if (serverMode == 'openwebui' && openwebuiAddress != null) {
+          return const OpenWebuiPage();
+        }
+
+        if (ResponsiveBreakpoints.of(context).isMobile) {
+          return const _ReinsMobileMainPage();
+        } else {
+          return const _ReinsLargeMainPage();
+        }
+      },
+    );
   }
 }
 
 class _ReinsMobileMainPage extends StatelessWidget {
-  const _ReinsMobileMainPage({super.key});
+  const _ReinsMobileMainPage();
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +47,7 @@ class _ReinsMobileMainPage extends StatelessWidget {
 }
 
 class _ReinsLargeMainPage extends StatelessWidget {
-  const _ReinsLargeMainPage({super.key});
+  const _ReinsLargeMainPage();
 
   @override
   Widget build(BuildContext context) {

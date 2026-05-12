@@ -56,6 +56,10 @@ class ChatPageViewModel extends ChangeNotifier {
 
   bool get isServerConfigured {
     final box = Hive.box('settings');
+    final serverMode = box.get('serverMode', defaultValue: 'local');
+    if (serverMode == 'openwebui') {
+      return box.get('openwebuiAddress') != null;
+    }
     final isCloudMode = box.get('isCloudMode', defaultValue: false);
     if (isCloudMode) {
       return box.get('cloudApiKey') != null;
