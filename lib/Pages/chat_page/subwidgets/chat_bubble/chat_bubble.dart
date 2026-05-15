@@ -23,6 +23,7 @@ class ChatBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final actions = ChatBubbleActions(message);
+    final isUser = message.role == OllamaMessageRole.user;
 
     return ChatBubbleMenu(
       menuChildren: [
@@ -31,23 +32,21 @@ class ChatBubble extends StatelessWidget {
           leadingIcon: Icon(Icons.copy_outlined),
           child: const Text('Copy'),
         ),
-        MenuItemButton(
-          onPressed: () => actions.handleSelectText(context),
-          leadingIcon: Icon(Icons.select_all_outlined),
-          child: const Text('Select Text'),
-        ),
-        MenuItemButton(
-          onPressed: () => actions.handleRegenerate(context),
-          leadingIcon: Icon(Icons.refresh_outlined),
-          child: const Text('Regenerate'),
-        ),
+        if (isUser) ...[
+          MenuItemButton(
+            onPressed: () => actions.handleEdit(context),
+            closeOnActivate: false,
+            leadingIcon: Icon(Icons.edit_outlined),
+            child: const Text('Edit'),
+          ),
+        ],
+        if (!isUser)
+          MenuItemButton(
+            onPressed: () => actions.handleRegenerate(context),
+            leadingIcon: Icon(Icons.refresh_outlined),
+            child: const Text('Regenerate'),
+          ),
         Divider(),
-        MenuItemButton(
-          onPressed: () => actions.handleEdit(context),
-          closeOnActivate: false,
-          leadingIcon: Icon(Icons.edit_outlined),
-          child: const Text('Edit'),
-        ),
         MenuItemButton(
           onPressed: () => actions.handleDelete(context),
           leadingIcon: Icon(Icons.delete_outline),
@@ -166,7 +165,14 @@ class _AssistantBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: _buildMessageContent(context),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildMessageContent(context),
+          const SizedBox(height: 6),
+          _AssistantActionButtons(message: message),
+        ],
+      ),
     );
   }
 
@@ -209,6 +215,78 @@ class _AssistantBubble extends StatelessWidget {
   }
 }
 
+/// Copy and Regenerate buttons shown below assistant messages.
+class _AssistantActionButtons extends StatelessWidget {
+  final OllamaMessage message;
+
+  const _AssistantActionButtons({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final actions = ChatBubbleActions(message);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _ActionChip(
+          icon: Icons.copy_outlined,
+          label: 'Copy',
+          color: colorScheme.onSurfaceVariant,
+          onTap: actions.handleCopy,
+        ),
+        const SizedBox(width: 8),
+        _ActionChip(
+          icon: Icons.refresh_outlined,
+          label: 'Regenerate',
+          color: colorScheme.onSurfaceVariant,
+          onTap: () => actions.handleRegenerate(context),
+        ),
+      ],
+    );
+  }
+}
+
+class _ActionChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ActionChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 4.0),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 15, color: color),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// Paints an organic, curved speech-bubble tail at the bottom-right.
 class _BubbleTailPainter extends CustomPainter {
   final Color color;
@@ -222,14 +300,11 @@ class _BubbleTailPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
 
     final path = Path();
-    // Start at the bottom-right of the bubble
     path.moveTo(size.width - 6, size.height);
-    // Curve outward and down
     path.quadraticBezierTo(
       size.width + 4, size.height + 2,
       size.width + 8, size.height + 10,
     );
-    // Curve back to the bubble
     path.quadraticBezierTo(
       size.width + 2, size.height + 4,
       size.width - 12, size.height,
