@@ -58,12 +58,14 @@ class ThinkBlockWidget extends StatefulWidget {
 }
 
 class _ThinkBlockWidgetState extends State<ThinkBlockWidget>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   bool? _userToggle;
   final Stopwatch _stopwatch = Stopwatch();
   late final bool _wasAlreadyComplete;
   int _elapsedSeconds = 0;
   late final AnimationController _pulseController;
+  late final AnimationController _expandController;
+  late final Animation<double> _expandAnimation;
 
   bool get _isExpanded {
     if (_userToggle != null) return _userToggle!;
@@ -77,6 +79,15 @@ class _ThinkBlockWidgetState extends State<ThinkBlockWidget>
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
+    );
+    _expandController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+      value: _wasAlreadyComplete ? 0.0 : 1.0,
+    );
+    _expandAnimation = CurvedAnimation(
+      parent: _expandController,
+      curve: Curves.easeOutCubic,
     );
     if (!widget.isComplete) {
       _stopwatch.start();
@@ -103,7 +114,19 @@ class _ThinkBlockWidgetState extends State<ThinkBlockWidget>
       _stopwatch.stop();
       _elapsedSeconds = _stopwatch.elapsed.inSeconds;
       _pulseController.stop();
-      _userToggle ??= false;
+      if (_userToggle == null) {
+        _userToggle = false;
+        _expandController.reverse();
+      }
+    }
+  }
+
+  void _toggleExpand() {
+    setState(() => _userToggle = !_isExpanded);
+    if (_isExpanded) {
+      _expandController.forward();
+    } else {
+      _expandController.reverse();
     }
   }
 
@@ -111,6 +134,7 @@ class _ThinkBlockWidgetState extends State<ThinkBlockWidget>
   void dispose() {
     _stopwatch.stop();
     _pulseController.dispose();
+    _expandController.dispose();
     super.dispose();
   }
 
@@ -138,7 +162,7 @@ class _ThinkBlockWidgetState extends State<ThinkBlockWidget>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         GestureDetector(
-          onTap: () => setState(() => _userToggle = !_isExpanded),
+          onTap: _toggleExpand,
           child: Container(
             padding:
                 const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
@@ -178,29 +202,31 @@ class _ThinkBlockWidgetState extends State<ThinkBlockWidget>
             ),
           ),
         ),
-        AnimatedSize(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeInOut,
-          alignment: Alignment.topLeft,
-          child: _isExpanded
-              ? Container(
-                  margin: const EdgeInsets.only(top: 6.0),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14.0, vertical: 10.0),
-                  decoration: BoxDecoration(
-                    color: bgColor,
-                    borderRadius: BorderRadius.circular(12.0),
+        ClipRect(
+          child: SizeTransition(
+            sizeFactor: _expandAnimation,
+            axisAlignment: -1.0,
+            child: FadeTransition(
+              opacity: _expandAnimation,
+              child: Container(
+                margin: const EdgeInsets.only(top: 6.0),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14.0, vertical: 10.0),
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  borderRadius: BorderRadius.circular(12.0),
+                ),
+                child: SelectableText(
+                  widget.content,
+                  style: TextStyle(
+                    color: thinkColor.withValues(alpha: 0.85),
+                    fontSize: 13,
+                    height: 1.5,
                   ),
-                  child: SelectableText(
-                    widget.content,
-                    style: TextStyle(
-                      color: thinkColor.withValues(alpha: 0.85),
-                      fontSize: 13,
-                      height: 1.5,
-                    ),
-                  ),
-                )
-              : const SizedBox.shrink(),
+                ),
+              ),
+            ),
+          ),
         ),
       ],
     );
