@@ -55,55 +55,78 @@ class _ChatPageState extends State<ChatPage> {
                 right: 12,
                 bottom: _viewModel.hasImageAttachments ? 80 : 8,
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(28.0),
+                  borderRadius: BorderRadius.circular(24.0),
                   child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                    filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .surface
-                            .withValues(alpha: 0.8),
-                        borderRadius: BorderRadius.circular(28.0),
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest
+                                .withValues(alpha: 0.65),
+                            Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHigh
+                                .withValues(alpha: 0.55),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(24.0),
                         border: Border.all(
                           color: Theme.of(context)
                               .colorScheme
-                              .outlineVariant
-                              .withValues(alpha: 0.3),
+                              .outline
+                              .withValues(alpha: 0.15),
+                          width: 0.5,
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      child: ChatTextField(
-                        key: ValueKey(_viewModel.currentChat?.id),
-                        controller: _viewModel.textFieldController,
-                        onEditingComplete: _sendMessage,
-                        prefixIcon: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.add),
-                              onPressed: _handleAttachmentButton,
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                _viewModel.webSearchEnabled
-                                    ? Icons.travel_explore
-                                    : Icons.travel_explore_outlined,
-                                color: _viewModel.webSearchEnabled
-                                    ? Theme.of(context).colorScheme.onPrimary
-                                    : null,
-                              ),
-                              style: _viewModel.webSearchEnabled
-                                  ? IconButton.styleFrom(
-                                      backgroundColor:
-                                          Theme.of(context).colorScheme.primary,
-                                    )
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.add, size: 22),
+                            onPressed: _handleAttachmentButton,
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              _viewModel.webSearchEnabled
+                                  ? Icons.travel_explore
+                                  : Icons.travel_explore_outlined,
+                              size: 22,
+                              color: _viewModel.webSearchEnabled
+                                  ? Theme.of(context).colorScheme.onPrimary
                                   : null,
-                              onPressed: () => _viewModel.toggleWebSearch(),
-                              tooltip: 'Web Search',
                             ),
-                          ],
-                        ),
-                        suffixIcon: _buildTextFieldSuffixIcon(),
+                            style: _viewModel.webSearchEnabled
+                                ? IconButton.styleFrom(
+                                    backgroundColor:
+                                        Theme.of(context).colorScheme.primary,
+                                  )
+                                : null,
+                            onPressed: () => _viewModel.toggleWebSearch(),
+                            tooltip: 'Web Search',
+                          ),
+                          Expanded(
+                            child: ChatTextField(
+                              key: ValueKey(_viewModel.currentChat?.id),
+                              controller: _viewModel.textFieldController,
+                              onEditingComplete: _sendMessage,
+                            ),
+                          ),
+                          if (_buildTextFieldSuffixIcon() != null)
+                            _buildTextFieldSuffixIcon()!
+                          else
+                            const SizedBox(width: 8),
+                        ],
                       ),
                     ),
                   ),
@@ -189,28 +212,22 @@ class _ChatPageState extends State<ChatPage> {
 
   Widget? _buildTextFieldSuffixIcon() {
     if (_viewModel.isStreaming) {
-      return Padding(
-        padding: const EdgeInsets.only(right: 6.0),
-        child: IconButton(
-          icon: const Icon(Icons.stop_rounded, size: 20),
-          style: IconButton.styleFrom(
-            backgroundColor: Theme.of(context).colorScheme.errorContainer,
-            foregroundColor: Theme.of(context).colorScheme.onErrorContainer,
-          ),
-          onPressed: _viewModel.cancelStreaming,
+      return IconButton(
+        icon: const Icon(Icons.stop_rounded, size: 20),
+        style: IconButton.styleFrom(
+          backgroundColor: Theme.of(context).colorScheme.errorContainer,
+          foregroundColor: Theme.of(context).colorScheme.onErrorContainer,
         ),
+        onPressed: _viewModel.cancelStreaming,
       );
     } else if (_viewModel.hasText) {
-      return Padding(
-        padding: const EdgeInsets.only(right: 6.0),
-        child: IconButton(
-          icon: const Icon(Icons.arrow_upward_rounded, size: 20),
-          style: IconButton.styleFrom(
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            foregroundColor: Theme.of(context).colorScheme.onPrimary,
-          ),
-          onPressed: _sendMessage,
+      return IconButton(
+        icon: const Icon(Icons.arrow_upward_rounded, size: 20),
+        style: IconButton.styleFrom(
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Theme.of(context).colorScheme.onPrimary,
         ),
+        onPressed: _sendMessage,
       );
     } else {
       return null;
