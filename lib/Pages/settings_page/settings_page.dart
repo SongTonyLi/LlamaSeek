@@ -38,8 +38,6 @@ class _SettingsPageContent extends StatelessWidget {
         ServerSettings(
           autoFocusServerAddress: arguments?.autoFocusServerAddress ?? false,
         ),
-        SizedBox(height: 16),
-        ReinsSettings(),
       ],
     );
   }
