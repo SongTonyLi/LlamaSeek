@@ -195,6 +195,23 @@ class ChatProvider extends ChangeNotifier {
     await _databaseService.deleteChat(chat.id);
   }
 
+  Future<void> deleteChat(OllamaChat chat) async {
+    final chatIndex = _chats.indexWhere((c) => c.id == chat.id);
+    if (chatIndex == -1) return;
+
+    if (currentChat?.id == chat.id) {
+      _resetChat();
+    } else if (chatIndex < _currentChatIndex) {
+      _currentChatIndex--;
+    }
+
+    _chats.removeAt(chatIndex);
+    _activeChatStreams.remove(chat.id);
+
+    await _databaseService.deleteChat(chat.id);
+    notifyListeners();
+  }
+
   Future<void> sendPrompt(String text, {
     List<File>? images,
     String? searchContext,
