@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:reins/Constants/constants.dart';
 import 'package:reins/Models/ollama_chat.dart';
@@ -13,25 +15,37 @@ class ChatDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      child: SafeArea(
-        child: Column(
-          children: [
-            const Expanded(child: ChatNavigationDrawer()),
-            Container(
-              alignment: Alignment.centerLeft,
-              padding: const EdgeInsets.fromLTRB(28, 16, 28, 10),
-              child: IconButton(
-                icon: const Icon(Icons.settings_outlined),
-                onPressed: () {
-                  if (ResponsiveBreakpoints.of(context).isMobile) {
-                    Navigator.pop(context);
-                  }
+      backgroundColor: Colors.transparent,
+      child: ClipRRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+          child: Container(
+            color: Theme.of(context)
+                .colorScheme
+                .surface
+                .withValues(alpha: 0.75),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  const Expanded(child: ChatNavigationDrawer()),
+                  Container(
+                    alignment: Alignment.centerLeft,
+                    padding: const EdgeInsets.fromLTRB(28, 16, 28, 10),
+                    child: IconButton(
+                      icon: const Icon(Icons.settings_outlined),
+                      onPressed: () {
+                        if (ResponsiveBreakpoints.of(context).isMobile) {
+                          Navigator.pop(context);
+                        }
 
-                  Navigator.pushNamed(context, '/settings');
-                },
+                        Navigator.pushNamed(context, '/settings');
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
