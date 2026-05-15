@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:reins/Constants/constants.dart';
 import 'package:reins/Widgets/chat_configure_bottom_sheet.dart';
 import 'package:reins/Widgets/model_selection_bottom_sheet.dart';
 import 'package:provider/provider.dart';
@@ -18,7 +17,15 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       title: Column(
         children: [
-          Text(AppConstants.appName, style: GoogleFonts.pacifico()),
+          Text(
+            chatProvider.currentChat?.title ?? 'Reins',
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           if (chatProvider.currentChat != null)
             InkWell(
               onTap: () {
@@ -67,6 +74,12 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
           icon: const Icon(Icons.tune),
           onPressed: () {
             _handleConfigureButton(context);
+          },
+        ),
+        IconButton(
+          icon: const Icon(Icons.add_circle_outline),
+          onPressed: () {
+            chatProvider.destinationChatSelected(0);
           },
         ),
       ],
