@@ -41,7 +41,8 @@ class ThinkBlockParser {
   }
 }
 
-/// Collapsible thinking block widget with duration tracking.
+/// Collapsible thinking block with pulsing sparkle, duration timer,
+/// and smooth animated expand/collapse.
 class ThinkBlockWidget extends StatefulWidget {
   final String content;
   final bool isComplete;
@@ -57,12 +58,15 @@ class ThinkBlockWidget extends StatefulWidget {
 }
 
 class _ThinkBlockWidgetState extends State<ThinkBlockWidget>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   bool? _userToggle;
   final Stopwatch _stopwatch = Stopwatch();
   late final bool _wasAlreadyComplete;
   int _elapsedSeconds = 0;
+
   late final AnimationController _pulseController;
+  late final AnimationController _expandController;
+  late final Animation<double> _expandCurve;
 
   bool get _isExpanded {
     if (_userToggle != null) return _userToggle!;
@@ -73,10 +77,24 @@ class _ThinkBlockWidgetState extends State<ThinkBlockWidget>
   void initState() {
     super.initState();
     _wasAlreadyComplete = widget.isComplete;
+
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     );
+
+    // Start expanded if streaming, collapsed if loaded from history
+    _expandController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+      value: _wasAlreadyComplete ? 0.0 : 1.0,
+    );
+    _expandCurve = CurvedAnimation(
+      parent: _expandController,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+
     if (!widget.isComplete) {
       _stopwatch.start();
       _startTimer();
@@ -102,7 +120,13 @@ class _ThinkBlockWidgetState extends State<ThinkBlockWidget>
       _stopwatch.stop();
       _elapsedSeconds = _stopwatch.elapsed.inSeconds;
       _pulseController.stop();
-      _userToggle ??= false;
+      if (_userToggle == null) {
+        _userToggle = false;
+        // Smooth auto-collapse after a brief pause
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) _expandController.reverse();
+        });
+      }
     }
   }
 
@@ -110,7 +134,17 @@ class _ThinkBlockWidgetState extends State<ThinkBlockWidget>
   void dispose() {
     _stopwatch.stop();
     _pulseController.dispose();
+    _expandController.dispose();
     super.dispose();
+  }
+
+  void _toggle() {
+    setState(() => _userToggle = !_isExpanded);
+    if (_isExpanded) {
+      _expandController.forward();
+    } else {
+      _expandController.reverse();
+    }
   }
 
   String get _label {
@@ -136,9 +170,7 @@ class _ThinkBlockWidgetState extends State<ThinkBlockWidget>
       children: [
         InkWell(
           borderRadius: BorderRadius.circular(8),
-          onTap: () {
-            setState(() => _userToggle = !_isExpanded);
-          },
+          onTap: _toggle,
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 4.0),
             child: Row(
@@ -148,7 +180,8 @@ class _ThinkBlockWidgetState extends State<ThinkBlockWidget>
                   FadeTransition(
                     opacity: Tween(begin: 0.3, end: 1.0)
                         .animate(_pulseController),
-                    child: Icon(Icons.auto_awesome, color: color, size: 16),
+                    child:
+                        Icon(Icons.auto_awesome, color: color, size: 16),
                   )
                 else
                   Icon(Icons.auto_awesome, color: color, size: 16),
@@ -161,25 +194,42 @@ class _ThinkBlockWidgetState extends State<ThinkBlockWidget>
                   ),
                 ),
                 const SizedBox(width: 2),
-                Icon(
-                  _isExpanded
-                      ? Icons.keyboard_arrow_down
-                      : Icons.keyboard_arrow_right,
-                  color: color,
-                  size: 18,
+                AnimatedBuilder(
+                  animation: _expandCurve,
+                  builder: (context, child) {
+                    return Transform.rotate(
+                      angle: _expandCurve.value * 1.5708, // 0 → 90°
+                      child: child,
+                    );
+                  },
+                  child: Icon(
+                    Icons.keyboard_arrow_right,
+                    color: color,
+                    size: 18,
+                  ),
                 ),
               ],
             ),
           ),
         ),
-        if (_isExpanded)
-          Padding(
-            padding: const EdgeInsets.only(left: 24.0, top: 4.0, bottom: 8.0),
-            child: SelectableText(
-              widget.content,
-              style: TextStyle(color: color, fontSize: 13, height: 1.4),
+        ClipRect(
+          child: SizeTransition(
+            sizeFactor: _expandCurve,
+            axisAlignment: -1.0,
+            child: FadeTransition(
+              opacity: _expandCurve,
+              child: Padding(
+                padding: const EdgeInsets.only(
+                    left: 24.0, top: 4.0, bottom: 8.0),
+                child: SelectableText(
+                  widget.content,
+                  style:
+                      TextStyle(color: color, fontSize: 13, height: 1.4),
+                ),
+              ),
             ),
           ),
+        ),
       ],
     );
   }
