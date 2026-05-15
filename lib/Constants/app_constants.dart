@@ -1,5 +1,5 @@
 class AppConstants {
-  static const String appName = 'Reins';
+  static const String appName = 'LlamaSeek';
   static const String appIconPng = 'assets/images/reins.png';
   static const String appIconSvg = 'assets/images/reins.svg';
 

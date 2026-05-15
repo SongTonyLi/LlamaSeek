@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:reins/Models/chat_configure_arguments.dart';
-import 'package:reins/Models/ollama_chat.dart';
-import 'package:reins/Models/ollama_exception.dart';
-import 'package:reins/Providers/chat_provider.dart';
-import 'package:reins/Widgets/flexible_text.dart';
+import 'package:llamaseek/Models/chat_configure_arguments.dart';
+import 'package:llamaseek/Models/ollama_chat.dart';
+import 'package:llamaseek/Models/ollama_exception.dart';
+import 'package:llamaseek/Providers/chat_provider.dart';
+import 'package:llamaseek/Widgets/flexible_text.dart';
 
 import 'ollama_bottom_sheet_header.dart';
 

@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_compression/image_compression.dart' as img_compress;
 import 'package:path/path.dart' as path;
-import 'package:reins/Constants/constants.dart';
+import 'package:llamaseek/Constants/constants.dart';
 
 /// Handles all image storage and compression operations
 class ImageService {

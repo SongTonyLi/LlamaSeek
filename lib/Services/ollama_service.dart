@@ -1,14 +1,14 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
-import 'package:reins/Utils/http_error_formatter.dart';
-import 'package:reins/Models/api/tags_response.dart';
-import 'package:reins/Models/api/show_response.dart';
-import 'package:reins/Models/ollama_chat.dart';
-import 'package:reins/Models/ollama_exception.dart';
-import 'package:reins/Models/ollama_message.dart';
-import 'package:reins/Models/ollama_model.dart';
-import 'package:reins/Models/api/create_request.dart';
+import 'package:llamaseek/Utils/http_error_formatter.dart';
+import 'package:llamaseek/Models/api/tags_response.dart';
+import 'package:llamaseek/Models/api/show_response.dart';
+import 'package:llamaseek/Models/ollama_chat.dart';
+import 'package:llamaseek/Models/ollama_exception.dart';
+import 'package:llamaseek/Models/ollama_message.dart';
+import 'package:llamaseek/Models/ollama_model.dart';
+import 'package:llamaseek/Models/api/create_request.dart';
 
 class OllamaService {
   static const String defaultLocalUrl = "http://localhost:11434";

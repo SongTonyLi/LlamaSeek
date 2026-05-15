@@ -1,6 +1,6 @@
-import 'package:reins/Models/api/create_request.dart';
-import 'package:reins/Models/ollama_chat.dart';
-import 'package:reins/Models/ollama_message.dart';
+import 'package:llamaseek/Models/api/create_request.dart';
+import 'package:llamaseek/Models/ollama_chat.dart';
+import 'package:llamaseek/Models/ollama_message.dart';
 import 'package:test/test.dart';
 
 void main() {

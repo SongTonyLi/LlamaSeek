@@ -1,9 +1,9 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:reins/Constants/constants.dart';
-import 'package:reins/Models/ollama_chat.dart';
-import 'package:reins/Providers/chat_provider.dart';
+import 'package:llamaseek/Constants/constants.dart';
+import 'package:llamaseek/Models/ollama_chat.dart';
+import 'package:llamaseek/Providers/chat_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 

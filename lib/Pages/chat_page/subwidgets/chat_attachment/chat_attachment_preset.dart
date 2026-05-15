@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:reins/Models/chat_preset.dart';
+import 'package:llamaseek/Models/chat_preset.dart';
 
 class ChatAttachmentPreset extends StatelessWidget {
   final ChatPreset preset;

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:reins/Pages/chat_page/chat_page.dart';
-import 'package:reins/Pages/openwebui_page.dart';
-import 'package:reins/Widgets/chat_app_bar.dart';
-import 'package:reins/Widgets/chat_drawer.dart';
+import 'package:llamaseek/Pages/chat_page/chat_page.dart';
+import 'package:llamaseek/Pages/openwebui_page.dart';
+import 'package:llamaseek/Widgets/chat_app_bar.dart';
+import 'package:llamaseek/Widgets/chat_drawer.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 
 class ReinsMainPage extends StatelessWidget {

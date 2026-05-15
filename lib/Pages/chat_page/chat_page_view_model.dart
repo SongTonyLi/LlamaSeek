@@ -6,14 +6,14 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 
-import 'package:reins/Constants/constants.dart';
-import 'package:reins/Models/chat_preset.dart';
-import 'package:reins/Models/ollama_chat.dart';
-import 'package:reins/Models/ollama_exception.dart';
-import 'package:reins/Models/ollama_message.dart';
-import 'package:reins/Models/ollama_model.dart';
-import 'package:reins/Providers/chat_provider.dart';
-import 'package:reins/Services/services.dart';
+import 'package:llamaseek/Constants/constants.dart';
+import 'package:llamaseek/Models/chat_preset.dart';
+import 'package:llamaseek/Models/ollama_chat.dart';
+import 'package:llamaseek/Models/ollama_exception.dart';
+import 'package:llamaseek/Models/ollama_message.dart';
+import 'package:llamaseek/Models/ollama_model.dart';
+import 'package:llamaseek/Providers/chat_provider.dart';
+import 'package:llamaseek/Services/services.dart';
 
 class ChatPageViewModel extends ChangeNotifier {
   final ChatProvider _chatProvider;

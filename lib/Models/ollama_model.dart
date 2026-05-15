@@ -1,6 +1,6 @@
-import 'package:reins/Models/api/tags_response.dart';
-import 'package:reins/Models/api/show_response.dart';
-import 'package:reins/Models/model_capabilities.dart';
+import 'package:llamaseek/Models/api/tags_response.dart';
+import 'package:llamaseek/Models/api/show_response.dart';
+import 'package:llamaseek/Models/model_capabilities.dart';
 
 /// Domain model representing an Ollama model.
 /// Combines data from /api/tags and optionally /api/show.

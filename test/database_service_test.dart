@@ -1,10 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:reins/Constants/constants.dart';
-import 'package:reins/Models/ollama_chat.dart';
-import 'package:reins/Models/ollama_message.dart';
-import 'package:reins/Services/database_service.dart';
+import 'package:llamaseek/Constants/constants.dart';
+import 'package:llamaseek/Models/ollama_chat.dart';
+import 'package:llamaseek/Models/ollama_message.dart';
+import 'package:llamaseek/Services/database_service.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart' as path;
 

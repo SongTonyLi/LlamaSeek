@@ -4,14 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:notification_centre/notification_centre.dart';
 
-import 'package:reins/Constants/constants.dart';
-import 'package:reins/Models/chat_configure_arguments.dart';
-import 'package:reins/Models/ollama_chat.dart';
-import 'package:reins/Models/ollama_exception.dart';
-import 'package:reins/Models/ollama_message.dart';
-import 'package:reins/Models/ollama_model.dart';
-import 'package:reins/Services/database_service.dart';
-import 'package:reins/Services/ollama_service.dart';
+import 'package:llamaseek/Constants/constants.dart';
+import 'package:llamaseek/Models/chat_configure_arguments.dart';
+import 'package:llamaseek/Models/ollama_chat.dart';
+import 'package:llamaseek/Models/ollama_exception.dart';
+import 'package:llamaseek/Models/ollama_message.dart';
+import 'package:llamaseek/Models/ollama_model.dart';
+import 'package:llamaseek/Services/database_service.dart';
+import 'package:llamaseek/Services/ollama_service.dart';
 
 class ChatProvider extends ChangeNotifier {
   final OllamaService _ollamaService;

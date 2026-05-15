@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:async/async.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:reins/Models/model_capabilities.dart';
+import 'package:llamaseek/Models/model_capabilities.dart';
 
-import 'package:reins/Models/ollama_model.dart';
-import 'package:reins/Models/ollama_request_state.dart';
-import 'package:reins/Providers/chat_provider.dart';
-import 'package:reins/Widgets/ollama_bottom_sheet_header.dart';
+import 'package:llamaseek/Models/ollama_model.dart';
+import 'package:llamaseek/Models/ollama_request_state.dart';
+import 'package:llamaseek/Providers/chat_provider.dart';
+import 'package:llamaseek/Widgets/ollama_bottom_sheet_header.dart';
 
 class ModelSelectionBottomSheet extends StatefulWidget {
   final String title;

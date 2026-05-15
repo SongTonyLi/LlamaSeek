@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
-import 'package:reins/Constants/constants.dart';
+import 'package:llamaseek/Constants/constants.dart';
 import 'package:uuid/uuid.dart';
 
 class OllamaMessage {

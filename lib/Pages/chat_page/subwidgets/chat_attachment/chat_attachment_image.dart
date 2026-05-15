@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:reins/Widgets/chat_image.dart';
+import 'package:llamaseek/Widgets/chat_image.dart';
 
 class ChatAttachmentImage extends StatelessWidget {
   final File imageFile;

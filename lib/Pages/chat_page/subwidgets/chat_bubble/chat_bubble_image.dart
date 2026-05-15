@@ -3,7 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
-import 'package:reins/Widgets/chat_image.dart';
+import 'package:llamaseek/Widgets/chat_image.dart';
 
 class ChatBubbleImage extends StatelessWidget {
   final File imageFile;

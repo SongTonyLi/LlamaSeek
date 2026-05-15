@@ -1,9 +1,9 @@
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
-import 'package:reins/Models/ollama_chat.dart';
-import 'package:reins/Services/ollama_service.dart';
-import 'package:reins/Models/ollama_message.dart';
+import 'package:llamaseek/Models/ollama_chat.dart';
+import 'package:llamaseek/Services/ollama_service.dart';
+import 'package:llamaseek/Models/ollama_message.dart';
 import 'package:test/test.dart';
 
 void main() {

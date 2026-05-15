@@ -7,13 +7,13 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
-import 'package:reins/Models/ollama_chat.dart';
-import 'package:reins/Models/ollama_exception.dart';
-import 'package:reins/Models/ollama_message.dart';
-import 'package:reins/Models/ollama_model.dart';
-import 'package:reins/Pages/chat_page/chat_page_view_model.dart';
-import 'package:reins/Providers/chat_provider.dart';
-import 'package:reins/Services/services.dart';
+import 'package:llamaseek/Models/ollama_chat.dart';
+import 'package:llamaseek/Models/ollama_exception.dart';
+import 'package:llamaseek/Models/ollama_message.dart';
+import 'package:llamaseek/Models/ollama_model.dart';
+import 'package:llamaseek/Pages/chat_page/chat_page_view_model.dart';
+import 'package:llamaseek/Providers/chat_provider.dart';
+import 'package:llamaseek/Services/services.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

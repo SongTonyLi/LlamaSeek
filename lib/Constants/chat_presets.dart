@@ -1,4 +1,4 @@
-import 'package:reins/Models/chat_preset.dart';
+import 'package:llamaseek/Models/chat_preset.dart';
 
 class ChatPresets {
   static final List<ChatPreset> chatPresets = List.unmodifiable([

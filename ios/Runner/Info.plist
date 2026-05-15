@@ -28,6 +28,17 @@
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoadsInWebContent</key>
+		<true/>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Camera access is needed for video calls in Open-webui.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Microphone access is needed for voice input in Open-webui.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Reins needs access to your photo library to let you select images to send in chats.</string>
 	<key>UIApplicationSceneManifest</key>
@@ -72,16 +83,5 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsLocalNetworking</key>
-		<true/>
-		<key>NSAllowsArbitraryLoadsInWebContent</key>
-		<true/>
-	</dict>
-	<key>NSCameraUsageDescription</key>
-	<string>Camera access is needed for video calls in Open-webui.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Microphone access is needed for voice input in Open-webui.</string>
 </dict>
 </plist>

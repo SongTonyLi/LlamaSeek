@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:reins/Constants/constants.dart';
-import 'package:reins/Widgets/flexible_text.dart';
+import 'package:llamaseek/Constants/constants.dart';
+import 'package:llamaseek/Widgets/flexible_text.dart';
 
 class OllamaBottomSheetHeader extends StatelessWidget {
   final String title;

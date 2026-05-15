@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:reins/Models/ollama_message.dart';
-import 'package:reins/Providers/chat_provider.dart';
+import 'package:llamaseek/Models/ollama_message.dart';
+import 'package:llamaseek/Providers/chat_provider.dart';
 
 import 'chat_bubble_bottom_sheet.dart';
 

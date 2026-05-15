@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 
-import 'package:reins/Widgets/chat_app_bar.dart';
-import 'package:reins/Widgets/model_selection_bottom_sheet.dart';
+import 'package:llamaseek/Widgets/chat_app_bar.dart';
+import 'package:llamaseek/Widgets/model_selection_bottom_sheet.dart';
 
 import 'chat_page_view_model.dart';
 import 'subwidgets/subwidgets.dart';

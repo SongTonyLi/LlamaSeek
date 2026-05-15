@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:reins/Constants/constants.dart';
-import 'package:reins/Models/ollama_chat.dart';
-import 'package:reins/Models/ollama_message.dart';
+import 'package:llamaseek/Constants/constants.dart';
+import 'package:llamaseek/Models/ollama_chat.dart';
+import 'package:llamaseek/Models/ollama_message.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
 import 'package:path/path.dart' as path;
