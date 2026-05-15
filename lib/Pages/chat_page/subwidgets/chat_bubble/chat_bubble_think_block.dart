@@ -56,11 +56,13 @@ class ThinkBlockWidget extends StatefulWidget {
   State<ThinkBlockWidget> createState() => _ThinkBlockWidgetState();
 }
 
-class _ThinkBlockWidgetState extends State<ThinkBlockWidget> {
+class _ThinkBlockWidgetState extends State<ThinkBlockWidget>
+    with SingleTickerProviderStateMixin {
   bool? _userToggle;
   final Stopwatch _stopwatch = Stopwatch();
   late final bool _wasAlreadyComplete;
   int _elapsedSeconds = 0;
+  late final AnimationController _pulseController;
 
   bool get _isExpanded {
     if (_userToggle != null) return _userToggle!;
@@ -71,9 +73,14 @@ class _ThinkBlockWidgetState extends State<ThinkBlockWidget> {
   void initState() {
     super.initState();
     _wasAlreadyComplete = widget.isComplete;
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
     if (!widget.isComplete) {
       _stopwatch.start();
       _startTimer();
+      _pulseController.repeat(reverse: true);
     }
   }
 
@@ -94,6 +101,7 @@ class _ThinkBlockWidgetState extends State<ThinkBlockWidget> {
     if (!oldWidget.isComplete && widget.isComplete) {
       _stopwatch.stop();
       _elapsedSeconds = _stopwatch.elapsed.inSeconds;
+      _pulseController.stop();
       _userToggle ??= false;
     }
   }
@@ -101,6 +109,7 @@ class _ThinkBlockWidgetState extends State<ThinkBlockWidget> {
   @override
   void dispose() {
     _stopwatch.stop();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -135,13 +144,14 @@ class _ThinkBlockWidgetState extends State<ThinkBlockWidget> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  _isExpanded
-                      ? Icons.keyboard_arrow_down
-                      : Icons.keyboard_arrow_right,
-                  color: color,
-                  size: 20,
-                ),
+                if (!widget.isComplete)
+                  FadeTransition(
+                    opacity: Tween(begin: 0.3, end: 1.0)
+                        .animate(_pulseController),
+                    child: Icon(Icons.auto_awesome, color: color, size: 16),
+                  )
+                else
+                  Icon(Icons.auto_awesome, color: color, size: 16),
                 const SizedBox(width: 4),
                 Text(
                   _label,
@@ -149,6 +159,14 @@ class _ThinkBlockWidgetState extends State<ThinkBlockWidget> {
                     color: color,
                     fontWeight: FontWeight.w500,
                   ),
+                ),
+                const SizedBox(width: 2),
+                Icon(
+                  _isExpanded
+                      ? Icons.keyboard_arrow_down
+                      : Icons.keyboard_arrow_right,
+                  color: color,
+                  size: 18,
                 ),
               ],
             ),
