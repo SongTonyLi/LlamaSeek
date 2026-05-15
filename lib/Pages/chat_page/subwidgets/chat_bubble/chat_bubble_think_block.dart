@@ -178,28 +178,29 @@ class _ThinkBlockWidgetState extends State<ThinkBlockWidget>
             ),
           ),
         ),
-        AnimatedCrossFade(
-          duration: const Duration(milliseconds: 200),
-          crossFadeState:
-              _isExpanded ? CrossFadeState.showFirst : CrossFadeState.showSecond,
-          firstChild: Container(
-            margin: const EdgeInsets.only(top: 6.0),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14.0, vertical: 10.0),
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(12.0),
-            ),
-            child: SelectableText(
-              widget.content,
-              style: TextStyle(
-                color: thinkColor.withValues(alpha: 0.85),
-                fontSize: 13,
-                height: 1.5,
-              ),
-            ),
-          ),
-          secondChild: const SizedBox.shrink(),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          alignment: Alignment.topLeft,
+          child: _isExpanded
+              ? Container(
+                  margin: const EdgeInsets.only(top: 6.0),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14.0, vertical: 10.0),
+                  decoration: BoxDecoration(
+                    color: bgColor,
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
+                  child: SelectableText(
+                    widget.content,
+                    style: TextStyle(
+                      color: thinkColor.withValues(alpha: 0.85),
+                      fontSize: 13,
+                      height: 1.5,
+                    ),
+                  ),
+                )
+              : const SizedBox.shrink(),
         ),
       ],
     );
