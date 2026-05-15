@@ -59,12 +59,11 @@ class _ChatTextFieldState extends State<ChatTextField> {
         onChanged: widget.onChanged,
         onEditingComplete: widget.onEditingComplete,
         decoration: InputDecoration(
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(30.0),
-          ),
-          labelText: 'Prompt',
+          border: InputBorder.none,
+          hintText: 'Message',
           prefixIcon: widget.prefixIcon,
           suffixIcon: widget.suffixIcon,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
         minLines: 1,
         maxLines: 5,

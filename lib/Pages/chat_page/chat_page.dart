@@ -47,7 +47,7 @@ class _ChatPageState extends State<ChatPage> {
               Positioned(
                 left: 0,
                 right: 0,
-                bottom: 0,
+                bottom: 68,
                 child: _buildChatFooter(),
               ),
               Positioned(
