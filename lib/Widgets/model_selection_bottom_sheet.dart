@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:async/async.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:llamaseek/Models/model_capabilities.dart';
@@ -9,7 +10,6 @@ import 'package:llamaseek/Models/model_capabilities.dart';
 import 'package:llamaseek/Models/ollama_model.dart';
 import 'package:llamaseek/Models/ollama_request_state.dart';
 import 'package:llamaseek/Providers/chat_provider.dart';
-import 'package:llamaseek/Widgets/ollama_bottom_sheet_header.dart';
 
 class ModelSelectionBottomSheet extends StatefulWidget {
   final String title;
@@ -22,7 +22,8 @@ class ModelSelectionBottomSheet extends StatefulWidget {
   });
 
   @override
-  State<ModelSelectionBottomSheet> createState() => _ModelSelectionBottomSheetState();
+  State<ModelSelectionBottomSheet> createState() =>
+      _ModelSelectionBottomSheetState();
 }
 
 class _ModelSelectionBottomSheetState extends State<ModelSelectionBottomSheet> {
@@ -30,7 +31,6 @@ class _ModelSelectionBottomSheetState extends State<ModelSelectionBottomSheet> {
 
   late final ChatProvider _chatProvider;
 
-  OllamaModel? _selectedModel;
   List<OllamaModel> _models = [];
   String _searchQuery = '';
   final _searchController = TextEditingController();
@@ -38,7 +38,6 @@ class _ModelSelectionBottomSheetState extends State<ModelSelectionBottomSheet> {
   var _state = OllamaRequestState.uninitialized;
   late CancelableOperation _fetchOperation;
 
-  /// Cache key derived from server address and cloud mode
   String get _cacheKey {
     final box = Hive.box('settings');
     final isCloud = box.get('isCloudMode', defaultValue: false);
@@ -46,18 +45,14 @@ class _ModelSelectionBottomSheetState extends State<ModelSelectionBottomSheet> {
     return box.get('serverAddress') ?? 'default';
   }
 
-  bool get _isCloudMode => Hive.box('settings').get('isCloudMode', defaultValue: false);
+  bool get _isCloudMode =>
+      Hive.box('settings').get('isCloudMode', defaultValue: false);
 
   @override
   void initState() {
     super.initState();
-
     _chatProvider = context.read<ChatProvider>();
-
-    // Load the previous state of the models list
     _models = _modelsBucket.readState(context, identifier: _cacheKey) ?? [];
-    _selectedModel = _findModelByName(widget.currentModelName);
-
     _fetchOperation = CancelableOperation.fromFuture(_fetchModels());
   }
 
@@ -74,29 +69,12 @@ class _ModelSelectionBottomSheetState extends State<ModelSelectionBottomSheet> {
     super.dispose();
   }
 
-  OllamaModel? _findModelByName(String? name) {
-    if (name == null) return null;
-    try {
-      return _models.firstWhere((m) => m.name == name);
-    } catch (_) {
-      return null;
-    }
-  }
-
   Future<void> _fetchModels() async {
-    setState(() {
-      _state = OllamaRequestState.loading;
-    });
+    setState(() => _state = OllamaRequestState.loading);
 
     try {
       _models = await _chatProvider.fetchAvailableModels();
       _state = OllamaRequestState.success;
-
-      // Update selection if we were searching by name (cache was empty)
-      if (_selectedModel == null && widget.currentModelName != null) {
-        _selectedModel = _findModelByName(widget.currentModelName);
-      }
-
       if (mounted) {
         _modelsBucket.writeState(context, _models, identifier: _cacheKey);
       }
@@ -104,53 +82,113 @@ class _ModelSelectionBottomSheetState extends State<ModelSelectionBottomSheet> {
       _state = OllamaRequestState.error;
     }
 
-    if (mounted) {
-      setState(() {});
-    }
+    if (mounted) setState(() {});
+  }
+
+  void _selectModel(OllamaModel model) {
+    Navigator.of(context).pop(model);
   }
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return SafeArea(
-      minimum: const EdgeInsets.all(16.0),
+      minimum: const EdgeInsets.only(bottom: 8),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              Expanded(child: OllamaBottomSheetHeader(title: widget.title)),
-              if (_isCloudMode)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Icon(
-                    Icons.cloud_outlined,
-                    size: 20,
-                    color: Theme.of(context).colorScheme.primary,
+          // Drag handle
+          Padding(
+            padding: const EdgeInsets.only(top: 12, bottom: 16),
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: colorScheme.onSurface.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          // Header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                Text(
+                  widget.title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.3,
                   ),
                 ),
-              if (_models.isNotEmpty && _state == OllamaRequestState.loading)
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16.0),
-                  child: CircularProgressIndicator(),
-                ),
-            ],
+                const Spacer(),
+                if (_isCloudMode)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primaryContainer.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.cloud_outlined,
+                            size: 13, color: colorScheme.primary),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Cloud',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (_models.isNotEmpty &&
+                    _state == OllamaRequestState.loading)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 12),
+                    child: SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+              ],
+            ),
           ),
-          const Divider(),
+          const SizedBox(height: 12),
+          // Search bar
           if (_models.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: 'Search models...',
-                  prefixIcon: const Icon(Icons.search, size: 20),
+                  hintText: 'Search',
+                  hintStyle: TextStyle(
+                    color: colorScheme.onSurface.withValues(alpha: 0.35),
+                    fontWeight: FontWeight.w400,
+                  ),
+                  prefixIcon: Icon(Icons.search,
+                      size: 20,
+                      color: colorScheme.onSurface.withValues(alpha: 0.4)),
                   isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 8.0),
+                  filled: true,
+                  fillColor: colorScheme.onSurface.withValues(alpha: 0.05),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
                   ),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.clear, size: 18),
+                          icon: const Icon(Icons.clear, size: 16),
                           onPressed: () {
                             _searchController.clear();
                             setState(() => _searchQuery = '');
@@ -161,20 +199,9 @@ class _ModelSelectionBottomSheetState extends State<ModelSelectionBottomSheet> {
                 onChanged: (value) => setState(() => _searchQuery = value),
               ),
             ),
+          const SizedBox(height: 8),
+          // Model list
           Expanded(child: _buildBody(context)),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: _selectedModel != null ? () => Navigator.of(context).pop(_selectedModel) : null,
-                child: const Text('Select'),
-              ),
-            ],
-          ),
         ],
       ),
     );
@@ -183,11 +210,31 @@ class _ModelSelectionBottomSheetState extends State<ModelSelectionBottomSheet> {
   Widget _buildBody(BuildContext context) {
     if (_state == OllamaRequestState.error) {
       return Center(
-        child: Text(
-          'An error occurred while fetching models.'
-          '\nCheck your server connection and try again.',
-          style: TextStyle(color: Theme.of(context).colorScheme.error),
-          textAlign: TextAlign.center,
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.wifi_off_rounded,
+                  size: 32,
+                  color: Theme.of(context).colorScheme.error),
+              const SizedBox(height: 12),
+              Text(
+                'Could not load models.\nCheck your connection.',
+                style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              FilledButton.tonal(
+                onPressed: () {
+                  _fetchOperation =
+                      CancelableOperation.fromFuture(_fetchModels());
+                },
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
         ),
       );
     } else if (_state == OllamaRequestState.loading && _models.isEmpty) {
@@ -199,25 +246,32 @@ class _ModelSelectionBottomSheetState extends State<ModelSelectionBottomSheet> {
 
       final filtered = _filteredModels;
       if (filtered.isEmpty) {
-        return Center(child: Text('No models match "$_searchQuery".'));
+        return Center(
+          child: Text(
+            'No models match "$_searchQuery"',
+            style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
+          ),
+        );
       }
 
       return RefreshIndicator(
         onRefresh: () async {
           _fetchOperation = CancelableOperation.fromFuture(_fetchModels());
         },
-        child: RadioGroup<OllamaModel>(
-          groupValue: _selectedModel,
-          onChanged: (model) => setState(() => _selectedModel = model),
-          child: ListView.builder(
-            itemCount: filtered.length,
-            itemBuilder: (context, index) {
-              return _ModelListTile(
-                model: filtered[index],
-                isCloudMode: _isCloudMode,
-              );
-            },
-          ),
+        child: ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          itemCount: filtered.length,
+          itemBuilder: (context, index) {
+            final model = filtered[index];
+            final isCurrent = model.name == widget.currentModelName;
+            return _ModelTile(
+              model: model,
+              isCurrent: isCurrent,
+              isCloudMode: _isCloudMode,
+              onTap: () => _selectModel(model),
+            );
+          },
         ),
       );
     } else {
@@ -226,84 +280,191 @@ class _ModelSelectionBottomSheetState extends State<ModelSelectionBottomSheet> {
   }
 }
 
-class _ModelListTile extends StatelessWidget {
+class _ModelTile extends StatelessWidget {
   final OllamaModel model;
+  final bool isCurrent;
   final bool isCloudMode;
+  final VoidCallback onTap;
 
-  const _ModelListTile({required this.model, this.isCloudMode = false});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final capabilities = model.capabilities;
-    final displayName = isCloudMode ? '${model.name}:cloud' : model.name;
-
-    return RadioListTile<OllamaModel>(
-      value: model,
-      title: Text(displayName),
-      subtitle: model.parameterSize.isNotEmpty
-          ? Text(
-              model.parameterSize,
-              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-            )
-          : null,
-      secondary: capabilities != null
-          ? Row(
-              spacing: 8,
-              mainAxisSize: MainAxisSize.min,
-              children: _buildCapabilityChips(capabilities),
-            )
-          : null,
-    );
-  }
-
-  List<Widget> _buildCapabilityChips(ModelCapabilities capabilities) {
-    final chips = <Widget>[];
-
-    if (capabilities.vision) {
-      chips.add(_CapabilityChip(
-        icon: Icons.visibility_outlined,
-        label: 'Vision',
-      ));
-    }
-    if (capabilities.tools) {
-      chips.add(_CapabilityChip(
-        icon: Icons.build_outlined,
-        label: 'Tools',
-      ));
-    }
-    if (capabilities.thinking) {
-      chips.add(_CapabilityChip(
-        icon: Icons.lightbulb_outline,
-        label: 'Thinking',
-      ));
-    }
-
-    return chips;
-  }
-}
-
-class _CapabilityChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-
-  const _CapabilityChip({
-    required this.icon,
-    required this.label,
+  const _ModelTile({
+    required this.model,
+    required this.isCurrent,
+    required this.isCloudMode,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: label,
-      child: Icon(icon, size: 22),
+    final colorScheme = Theme.of(context).colorScheme;
+    final capabilities = model.capabilities;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Material(
+        color: isCurrent
+            ? colorScheme.primaryContainer.withValues(alpha: 0.4)
+            : colorScheme.onSurface.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                // Model info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Name + size
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              model.name,
+                              style: GoogleFonts.jetBrainsMono(
+                                fontSize: 13.5,
+                                fontWeight: isCurrent
+                                    ? FontWeight.w600
+                                    : FontWeight.w500,
+                                color: isCurrent
+                                    ? colorScheme.primary
+                                    : colorScheme.onSurface,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (model.parameterSize.isNotEmpty) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 1.5),
+                              decoration: BoxDecoration(
+                                color: colorScheme.onSurface
+                                    .withValues(alpha: 0.07),
+                                borderRadius: BorderRadius.circular(5),
+                              ),
+                              child: Text(
+                                model.parameterSize,
+                                style: TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w500,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      // Capability badges
+                      if (capabilities != null &&
+                          _hasAnyCapability(capabilities))
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Wrap(
+                            spacing: 5,
+                            runSpacing: 4,
+                            children:
+                                _buildCapabilityBadges(context, capabilities),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                // Checkmark for current model
+                if (isCurrent)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: Icon(
+                      Icons.check_circle_rounded,
+                      size: 22,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  bool _hasAnyCapability(ModelCapabilities c) =>
+      c.vision || c.tools || c.thinking;
+
+  List<Widget> _buildCapabilityBadges(
+      BuildContext context, ModelCapabilities capabilities) {
+    final badges = <Widget>[];
+
+    if (capabilities.thinking) {
+      badges.add(_Badge(
+        label: 'Think',
+        icon: Icons.auto_awesome,
+        color: const Color(0xFF9C6ADE),
+      ));
+    }
+    if (capabilities.vision) {
+      badges.add(_Badge(
+        label: 'Vision',
+        icon: Icons.visibility_rounded,
+        color: const Color(0xFF3D8BD4),
+      ));
+    }
+    if (capabilities.tools) {
+      badges.add(_Badge(
+        label: 'Tools',
+        icon: Icons.handyman_rounded,
+        color: const Color(0xFFCF8523),
+      ));
+    }
+
+    return badges;
+  }
+}
+
+class _Badge extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+
+  const _Badge({
+    required this.label,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: color),
+          const SizedBox(width: 3),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: color,
+              letterSpacing: 0.1,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
 /// Shows a model selection bottom sheet and returns the selected model.
-///
-/// Returns the selected [OllamaModel], or the current model if cancelled.
 Future<OllamaModel?> showModelSelectionBottomSheet({
   required BuildContext context,
   required String title,
@@ -312,27 +473,37 @@ Future<OllamaModel?> showModelSelectionBottomSheet({
   return await showModalBottomSheet<OllamaModel?>(
     context: context,
     backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    useSafeArea: true,
     builder: (context) {
-      return ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context)
-                  .colorScheme
-                  .surface
-                  .withValues(alpha: 0.75),
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(20)),
+      return DraggableScrollableSheet(
+        initialChildSize: 0.55,
+        minChildSize: 0.3,
+        maxChildSize: 0.85,
+        builder: (context, scrollController) {
+          return ClipRRect(
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(20)),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .surface
+                      .withValues(alpha: 0.82),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                child: ModelSelectionBottomSheet(
+                  title: title,
+                  currentModelName: currentModelName,
+                ),
+              ),
             ),
-            child: ModelSelectionBottomSheet(
-                title: title, currentModelName: currentModelName),
-          ),
-        ),
+          );
+        },
       );
     },
-    isDismissible: false,
-    enableDrag: false,
   );
 }
