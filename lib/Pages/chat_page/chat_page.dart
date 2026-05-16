@@ -80,8 +80,8 @@ class _ChatPageState extends State<ChatPage> {
                 child: _buildChatFooter(),
               ),
               Positioned(
-                left: 12,
-                right: 12,
+                left: 6,
+                right: 6,
                 bottom: _viewModel.hasImageAttachments ? 80 : 0,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(24.0),

@@ -86,9 +86,6 @@ class LlamaSeekApp extends StatelessWidget {
         return MaterialApp(
           title: AppConstants.appName,
           theme: ThemeData(
-            fontFamily: Platform.isIOS || Platform.isMacOS
-                ? '.SF Pro Text'
-                : null,
             colorScheme: ColorScheme.fromSeed(
               brightness: _brightness ?? MediaQuery.platformBrightnessOf(context),
               dynamicSchemeVariant: DynamicSchemeVariant.neutral,
