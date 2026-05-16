@@ -3,9 +3,16 @@ import 'streaming_cursor.dart';
 
 /// Renders streaming text with per-word fade-in animation.
 ///
-/// Each new chunk of words fades in with a staggered wave effect,
-/// inspired by open-webui's token streaming animation. When streaming
-/// completes, the parent should switch to MarkdownBody for full formatting.
+/// Unlike a shared AnimationController that resets on every content update,
+/// each word tracks its own creation timestamp. Opacity is calculated as
+/// `elapsed / fadeDuration`, so each word independently fades in over
+/// [_fadeDurationSec] seconds regardless of how fast or slow new tokens arrive.
+///
+/// Words in the same batch get a small stagger delay so bursts of tokens
+/// produce a flowing wave rather than a simultaneous flash.
+///
+/// For performance, words that have finished animating are graduated into
+/// a single [_stableContent] string rendered as one efficient [TextSpan].
 class StreamingTextRenderer extends StatefulWidget {
   final String content;
   final TextStyle? baseStyle;
@@ -24,50 +31,87 @@ class StreamingTextRenderer extends StatefulWidget {
 
 class _StreamingTextRendererState extends State<StreamingTextRenderer>
     with SingleTickerProviderStateMixin {
-  late AnimationController _fadeController;
+  late AnimationController _tickController;
+  final Stopwatch _stopwatch = Stopwatch();
+
+  /// Content that has finished animating — rendered as one TextSpan.
   String _stableContent = '';
-  List<String> _newTokens = [];
+
+  /// Words currently undergoing fade-in animation.
+  final List<_WordEntry> _animatingWords = [];
+
+  /// Each word fades from invisible to fully opaque over this duration.
+  static const double _fadeDurationSec = 0.14; // 140ms
+
+  /// Stagger between consecutive words in the same batch.
+  static const double _staggerPerWord = 0.012; // 12ms per word
 
   @override
   void initState() {
     super.initState();
-    _fadeController = AnimationController(
+    _stopwatch.start();
+    _tickController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 200),
-      value: 1.0,
-    );
-    _newTokens = _tokenize(widget.content);
-    if (_newTokens.isNotEmpty) {
-      _fadeController.forward(from: 0.0);
-    }
+      duration: const Duration(seconds: 1),
+    )..repeat();
+    _appendTokens(widget.content);
   }
 
   @override
   void didUpdateWidget(StreamingTextRenderer old) {
     super.didUpdateWidget(old);
     if (widget.content != old.content) {
+      _graduateCompletedWords();
       if (widget.content.startsWith(old.content)) {
-        // Content was appended — animate only the delta
-        _stableContent = old.content;
-        _newTokens = _tokenize(widget.content.substring(old.content.length));
+        _appendTokens(widget.content.substring(old.content.length));
       } else {
-        // Content changed entirely — re-animate all
         _stableContent = '';
-        _newTokens = _tokenize(widget.content);
-      }
-      if (_newTokens.isNotEmpty) {
-        _fadeController.forward(from: 0.0);
+        _animatingWords.clear();
+        _appendTokens(widget.content);
       }
     }
   }
 
-  List<String> _tokenize(String text) {
-    return RegExp(r'\S+|\s+').allMatches(text).map((m) => m[0]!).toList();
+  /// Splits [newText] into word/whitespace tokens and adds them with stagger.
+  void _appendTokens(String newText) {
+    if (newText.isEmpty) return;
+
+    final now = _stopwatch.elapsedMilliseconds / 1000.0;
+    final matches = RegExp(r'\S+|\s+').allMatches(newText);
+
+    int wordIdx = 0;
+    for (final m in matches) {
+      final text = m[0]!;
+      final isWord = text.trim().isNotEmpty;
+      _animatingWords.add(_WordEntry(
+        text: text,
+        createdAt: now,
+        stagger: isWord ? (wordIdx * _staggerPerWord).clamp(0.0, 0.15) : 0.0,
+      ));
+      if (isWord) wordIdx++;
+    }
+
+    if (!_tickController.isAnimating) _tickController.repeat();
+  }
+
+  /// Promotes fully-faded-in words to [_stableContent] so only recent words
+  /// remain in the per-frame loop.
+  void _graduateCompletedWords() {
+    final now = _stopwatch.elapsedMilliseconds / 1000.0;
+    while (_animatingWords.isNotEmpty) {
+      final w = _animatingWords.first;
+      if ((now - w.createdAt - w.stagger) >= _fadeDurationSec + 0.05) {
+        _stableContent += _animatingWords.removeAt(0).text;
+      } else {
+        break;
+      }
+    }
   }
 
   @override
   void dispose() {
-    _fadeController.dispose();
+    _tickController.dispose();
+    _stopwatch.stop();
     super.dispose();
   }
 
@@ -81,17 +125,29 @@ class _StreamingTextRendererState extends State<StreamingTextRenderer>
         Theme.of(context).colorScheme.onSurface;
 
     return AnimatedBuilder(
-      animation: _fadeController,
+      animation: _tickController,
       builder: (context, _) {
+        final now = _stopwatch.elapsedMilliseconds / 1000.0;
+
+        // Stop ticking when every word is fully visible
+        final allDone = _animatingWords.every(
+          (w) => w.text.trim().isEmpty || (now - w.createdAt - w.stagger) >= _fadeDurationSec,
+        );
+        if (allDone && _tickController.isAnimating) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              _graduateCompletedWords();
+              if (_animatingWords.isEmpty) _tickController.stop();
+            }
+          });
+        }
+
         return Text.rich(
           TextSpan(
             style: style.copyWith(color: baseColor),
             children: [
-              // Stable (old) content at full opacity
               if (_stableContent.isNotEmpty) TextSpan(text: _stableContent),
-              // New tokens with staggered fade-in wave
-              ..._buildAnimatedTokens(style, baseColor),
-              // Blinking cursor at the end
+              for (final w in _animatingWords) _span(w, style, baseColor, now),
               if (widget.showCursor)
                 const WidgetSpan(
                   alignment: PlaceholderAlignment.middle,
@@ -104,38 +160,23 @@ class _StreamingTextRendererState extends State<StreamingTextRenderer>
     );
   }
 
-  List<InlineSpan> _buildAnimatedTokens(TextStyle style, Color baseColor) {
-    if (_newTokens.isEmpty) return [];
+  InlineSpan _span(_WordEntry w, TextStyle style, Color baseColor, double now) {
+    if (w.text.trim().isEmpty) return TextSpan(text: w.text);
 
-    final wordCount =
-        _newTokens.where((t) => t.trim().isNotEmpty).length.clamp(1, 999);
-    int wordIndex = 0;
+    final elapsed = now - w.createdAt - w.stagger;
+    final t = (elapsed / _fadeDurationSec).clamp(0.0, 1.0);
+    if (t >= 1.0) return TextSpan(text: w.text);
 
-    return _newTokens.map((token) {
-      if (token.trim().isEmpty) {
-        return TextSpan(text: token) as InlineSpan;
-      }
-
-      // Staggered wave: each word starts fading slightly after the previous
-      double opacity;
-      if (wordCount <= 1) {
-        opacity = Curves.easeOut.transform(_fadeController.value);
-      } else {
-        final staggerDelay = wordIndex / wordCount * 0.4;
-        final wordProgress =
-            ((_fadeController.value - staggerDelay) / (1.0 - staggerDelay))
-                .clamp(0.0, 1.0);
-        opacity = Curves.easeOut.transform(wordProgress);
-      }
-
-      wordIndex++;
-
-      return TextSpan(
-        text: token,
-        style: style.copyWith(
-          color: baseColor.withValues(alpha: opacity),
-        ),
-      ) as InlineSpan;
-    }).toList();
+    return TextSpan(
+      text: w.text,
+      style: TextStyle(color: baseColor.withValues(alpha: Curves.easeOut.transform(t))),
+    );
   }
+}
+
+class _WordEntry {
+  final String text;
+  final double createdAt;
+  final double stagger;
+  _WordEntry({required this.text, required this.createdAt, this.stagger = 0.0});
 }

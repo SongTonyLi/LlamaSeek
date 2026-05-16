@@ -14,6 +14,7 @@ class ChatListView extends StatefulWidget {
   final bool isStreaming;
   final Widget? error;
   final double? bottomPadding;
+  final double? topPadding;
 
   const ChatListView({
     super.key,
@@ -22,6 +23,7 @@ class ChatListView extends StatefulWidget {
     this.isStreaming = false,
     this.error,
     this.bottomPadding,
+    this.topPadding,
   });
 
   @override
@@ -117,6 +119,11 @@ class _ChatListViewState extends State<ChatListView> {
                 return ChatBubble(message: message);
               },
             ),
+            // Top padding for glass AppBar overlap (end of reversed list = visual top)
+            if (widget.topPadding != null && widget.topPadding! > 0)
+              SliverToBoxAdapter(
+                child: SizedBox(height: widget.topPadding!),
+              ),
           ],
         ),
         if (_isScrollToBottomButtonVisible)

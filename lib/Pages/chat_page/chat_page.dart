@@ -63,7 +63,7 @@ class _ChatPageState extends State<ChatPage> {
                         color: Theme.of(context)
                             .colorScheme
                             .surface
-                            .withValues(alpha: 0.35),
+                            .withValues(alpha: 0.18),
                         borderRadius: BorderRadius.circular(24.0),
                         border: Border.all(
                           color: Theme.of(context)
@@ -155,6 +155,7 @@ class _ChatPageState extends State<ChatPage> {
         );
       }
     } else {
+      final isMobile = ResponsiveBreakpoints.of(context).isMobile;
       return ChatListView(
         key: PageStorageKey<String>(_viewModel.currentChat?.id ?? 'empty'),
         messages: _viewModel.messages,
@@ -167,6 +168,9 @@ class _ChatPageState extends State<ChatPage> {
               )
             : null,
         bottomPadding: _viewModel.hasImageAttachments ? 140 : 70,
+        topPadding: isMobile
+            ? MediaQuery.of(context).padding.top + kToolbarHeight
+            : null,
       );
     }
   }

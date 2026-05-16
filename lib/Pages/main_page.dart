@@ -39,8 +39,9 @@ class _LlamaSeekMobileMainPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: ChatAppBar(),
-      body: SafeArea(child: ChatPage()),
+      body: SafeArea(top: false, child: ChatPage()),
       drawer: ChatDrawer(),
     );
   }

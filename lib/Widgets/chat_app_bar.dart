@@ -99,7 +99,20 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
           },
         ),
       ],
-      forceMaterialTransparency: !ResponsiveBreakpoints.of(context).isMobile,
+      forceMaterialTransparency: true,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      flexibleSpace: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+          child: Container(
+            color: Theme.of(context)
+                .colorScheme
+                .surface
+                .withValues(alpha: 0.2),
+          ),
+        ),
+      ),
     );
   }
 
