@@ -15,10 +15,8 @@ import 'package:url_launcher/url_launcher_string.dart';
 
 import 'chat_bubble_actions.dart';
 import 'chat_bubble_image.dart';
-import 'chat_bubble_menu.dart';
 import 'chat_bubble_think_block.dart' show ThinkBlockParser, ThinkBlockWidget;
 import 'streaming_llama.dart';
-
 
 class ChatBubble extends StatelessWidget {
   final OllamaMessage message;
@@ -32,39 +30,7 @@ class ChatBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final actions = ChatBubbleActions(message);
-    final isUser = message.role == OllamaMessageRole.user;
-
-    return ChatBubbleMenu(
-      menuChildren: [
-        MenuItemButton(
-          onPressed: actions.handleCopy,
-          leadingIcon: Icon(Icons.copy_outlined),
-          child: const Text('Copy'),
-        ),
-        if (isUser) ...[
-          MenuItemButton(
-            onPressed: () => actions.handleEdit(context),
-            closeOnActivate: false,
-            leadingIcon: Icon(Icons.edit_outlined),
-            child: const Text('Edit'),
-          ),
-        ],
-        if (!isUser)
-          MenuItemButton(
-            onPressed: () => actions.handleRegenerate(context),
-            leadingIcon: Icon(Icons.refresh_outlined),
-            child: const Text('Regenerate'),
-          ),
-        Divider(),
-        MenuItemButton(
-          onPressed: () => actions.handleDelete(context),
-          leadingIcon: Icon(Icons.delete_outline),
-          child: const Text('Delete'),
-        ),
-      ],
-      child: _ChatBubbleBody(message: message, isStreaming: isStreaming),
-    );
+    return _ChatBubbleBody(message: message, isStreaming: isStreaming);
   }
 }
 
@@ -74,10 +40,20 @@ class _ChatBubbleBody extends StatelessWidget {
 
   const _ChatBubbleBody({required this.message, required this.isStreaming});
 
+  static final md.ExtensionSet _markdownExtensionSet = md.ExtensionSet(
+    [
+      ...md.ExtensionSet.gitHubFlavored.blockSyntaxes,
+      LatexBlockSyntax(),
+    ],
+    [
+      _InlineLatexSyntax(),
+      ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes,
+    ],
+  );
+
   bool get isSentFromUser => message.role == OllamaMessageRole.user;
 
-  CrossAxisAlignment get bubbleAlignment =>
-      isSentFromUser ? CrossAxisAlignment.end : CrossAxisAlignment.start;
+  CrossAxisAlignment get bubbleAlignment => isSentFromUser ? CrossAxisAlignment.end : CrossAxisAlignment.start;
 
   @override
   Widget build(BuildContext context) {
@@ -97,9 +73,7 @@ class _ChatBubbleBody extends StatelessWidget {
               child: Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: message.images!
-                    .map((imageFile) => ChatBubbleImage(imageFile: imageFile))
-                    .toList(),
+                children: message.images!.map((imageFile) => ChatBubbleImage(imageFile: imageFile)).toList(),
               ),
             ),
           if (isSentFromUser) ...[
@@ -119,8 +93,7 @@ class _ChatBubbleBody extends StatelessWidget {
     );
   }
 
-  static Widget _buildMarkdown(BuildContext context, String data,
-      {bool selectable = true}) {
+  static Widget _buildMarkdown(BuildContext context, String data, {bool selectable = true}) {
     return MarkdownBody(
       data: _preprocessLatex(data),
       selectable: selectable,
@@ -129,12 +102,10 @@ class _ChatBubbleBody extends StatelessWidget {
       syntaxHighlighter: CodeSyntaxHighlighter(
         brightness: Theme.of(context).brightness,
       ),
-      extensionSet: md.ExtensionSet.gitHubFlavored,
+      extensionSet: _markdownExtensionSet,
       builders: {
         'latex': _SmartLatexBuilder(),
       },
-      inlineSyntaxes: [LatexInlineSyntax()],
-      blockSyntaxes: [LatexBlockSyntax()],
       onTapLink: (text, href, title) => launchUrlString(href!),
     );
   }
@@ -277,15 +248,13 @@ class _AssistantBubbleState extends State<_AssistantBubble> {
   }
 
   Widget _buildContent(BuildContext context, String data) {
-    return widget.buildMarkdown(context, data,
-        selectable: !widget.isStreaming);
+    return widget.buildMarkdown(context, data, selectable: !widget.isStreaming);
   }
 
   Widget _buildMessageContent(BuildContext context) {
     final content = widget.isStreaming ? _throttledContent : widget.message.content;
 
-    if (widget.message.thinking != null &&
-        widget.message.thinking!.isNotEmpty) {
+    if (widget.message.thinking != null && widget.message.thinking!.isNotEmpty) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -432,8 +401,7 @@ class _CopyChip extends StatefulWidget {
   State<_CopyChip> createState() => _CopyChipState();
 }
 
-class _CopyChipState extends State<_CopyChip>
-    with SingleTickerProviderStateMixin {
+class _CopyChipState extends State<_CopyChip> with SingleTickerProviderStateMixin {
   bool _copied = false;
 
   void _handleTap() {
@@ -447,8 +415,7 @@ class _CopyChipState extends State<_CopyChip>
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final color =
-        _copied ? colorScheme.primary : colorScheme.onSurfaceVariant;
+    final color = _copied ? colorScheme.primary : colorScheme.onSurfaceVariant;
 
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 200),
@@ -484,8 +451,7 @@ class _CopyChipState extends State<_CopyChip>
 }
 
 /// Shows an animated edit popup that expands from the chat bubble.
-Future<String?> _showEditPopup(
-    BuildContext context, OllamaMessage message) async {
+Future<String?> _showEditPopup(BuildContext context, OllamaMessage message) async {
   final chatProvider = Provider.of<ChatProvider>(context, listen: false);
 
   return showGeneralDialog<String>(
@@ -601,8 +567,7 @@ class _EditPopupContentState extends State<_EditPopupContent> {
                             child: Text(
                               'Cancel',
                               style: TextStyle(
-                                color: colorScheme.onPrimaryContainer
-                                    .withValues(alpha: 0.6),
+                                color: colorScheme.onPrimaryContainer.withValues(alpha: 0.6),
                               ),
                             ),
                           ),
@@ -637,6 +602,29 @@ class _EditPopupContentState extends State<_EditPopupContent> {
   }
 }
 
+class _InlineLatexSyntax extends md.InlineSyntax {
+  static final RegExp _pattern = RegExp(
+    r"""(?<!\\)(\$\$?)\s*((?:\\.|[^\\\n])+?)\s*(?<!\\)\1(?=[\s?!.,:;)\]}>"']|$)""",
+  );
+
+  _InlineLatexSyntax() : super(_pattern.pattern);
+
+  @override
+  bool onMatch(md.InlineParser parser, Match match) {
+    final delimiter = match.group(1);
+    final equation = match.group(2);
+    if (delimiter == null || equation == null || equation.trim().isEmpty) {
+      return false;
+    }
+
+    final element = md.Element.text('latex', equation.trim());
+    element.attributes['MathStyle'] = delimiter.length == 2 ? 'display' : 'text';
+    parser.addNode(element);
+
+    return true;
+  }
+}
+
 /// Renders LaTeX: inline ($...$) normally, display ($$...$$) centered.
 class _SmartLatexBuilder extends MarkdownElementBuilder {
   @override
@@ -650,11 +638,17 @@ class _SmartLatexBuilder extends MarkdownElementBuilder {
     if (text.isEmpty) return const SizedBox();
 
     final isDisplay = element.attributes['MathStyle'] == 'display';
+    final rawSource = isDisplay ? '\$\$$text\$\$' : '\$$text\$';
 
     final mathWidget = Math.tex(
       text,
       mathStyle: isDisplay ? MathStyle.display : MathStyle.text,
       textStyle: preferredStyle,
+      onErrorFallback: (_) => _LatexSourceFallback(
+        rawSource: rawSource,
+        isDisplay: isDisplay,
+        preferredStyle: preferredStyle,
+      ),
     );
 
     if (isDisplay) {
@@ -671,6 +665,65 @@ class _SmartLatexBuilder extends MarkdownElementBuilder {
       scrollDirection: Axis.horizontal,
       clipBehavior: Clip.antiAlias,
       child: mathWidget,
+    );
+  }
+}
+
+class _LatexSourceFallback extends StatelessWidget {
+  final String rawSource;
+  final bool isDisplay;
+  final TextStyle? preferredStyle;
+
+  const _LatexSourceFallback({
+    required this.rawSource,
+    required this.isDisplay,
+    this.preferredStyle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final markdownStyleSheet = context.markdownStyleSheet;
+    final textStyle = markdownStyleSheet.code
+            ?.copyWith(
+              backgroundColor: Colors.transparent,
+              color: colorScheme.onSurface.withValues(alpha: 0.82),
+            )
+            .merge(
+              preferredStyle?.copyWith(
+                backgroundColor: Colors.transparent,
+                color: colorScheme.onSurface.withValues(alpha: 0.82),
+              ),
+            ) ??
+        preferredStyle?.copyWith(
+          color: colorScheme.onSurface.withValues(alpha: 0.82),
+        );
+
+    if (isDisplay) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Container(
+          width: double.infinity,
+          padding: markdownStyleSheet.codeblockPadding ?? const EdgeInsets.all(14),
+          decoration: markdownStyleSheet.codeblockDecoration,
+          child: Text(rawSource, style: textStyle),
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      clipBehavior: Clip.antiAlias,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+          child: Text(rawSource, style: textStyle),
+        ),
+      ),
     );
   }
 }

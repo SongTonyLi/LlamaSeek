@@ -86,8 +86,10 @@ class _ServerSettingsState extends State<ServerSettings> {
       children: [
         Text(
           'Server',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                letterSpacing: 0.3,
               ),
         ),
         const SizedBox(height: 16),
@@ -137,7 +139,7 @@ class _ServerSettingsState extends State<ServerSettings> {
           },
           decoration: InputDecoration(
             labelText: 'Ollama Server Address',
-            border: OutlineInputBorder(),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             errorText: _serverAddressErrorText,
             suffixIcon: IconButton(
               icon: Icon(Icons.info_outline),
@@ -191,7 +193,7 @@ class _ServerSettingsState extends State<ServerSettings> {
           decoration: InputDecoration(
             labelText: 'API Key',
             hintText: 'Enter your Ollama Cloud API key',
-            border: OutlineInputBorder(),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             errorText: _cloudErrorText,
             suffixIcon: IconButton(
               icon: Icon(

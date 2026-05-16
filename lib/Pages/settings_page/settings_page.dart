@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:llamaseek/Models/settings_route_arguments.dart';
 
 import 'subwidgets/subwidgets.dart';
@@ -13,7 +12,7 @@ class SettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Settings', style: GoogleFonts.pacifico()),
+        title: const Text('Settings', style: TextStyle(fontWeight: FontWeight.w600)),
       ),
       body: SafeArea(
         child: _SettingsPageContent(arguments: arguments),

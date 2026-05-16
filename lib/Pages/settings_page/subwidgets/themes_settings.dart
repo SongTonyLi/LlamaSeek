@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:llamaseek/Constants/constants.dart';
 
 class ThemesSettings extends StatefulWidget {
   const ThemesSettings({super.key});
@@ -12,157 +11,129 @@ class ThemesSettings extends StatefulWidget {
 class _ThemesSettingsState extends State<ThemesSettings> {
   final _settingsBox = Hive.box('settings');
 
+  static const _presetColors = [
+    Colors.red,
+    Colors.orange,
+    Colors.green,
+    Colors.blue,
+    Colors.purple,
+    Colors.grey,
+  ];
+
+  Color get _currentColor =>
+      _settingsBox.get('color', defaultValue: Colors.grey) as Color;
+
+  int? get _brightness => _settingsBox.get('brightness') as int?;
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            'Themes',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          decoration: ShapeDecoration(
-            shape: StadiumBorder(),
-            color: Theme.of(context).colorScheme.primaryContainer,
-          ),
-          child: Row(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: CircleAvatar(
-                  backgroundImage: AssetImage(AppConstants.appIconPng),
-                  radius: MediaQuery.of(context).textScaler.scale(16),
-                ),
+        _sectionLabel(context, 'Appearance'),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: SegmentedButton<int?>(
+            segments: const [
+              ButtonSegment(
+                value: 1,
+                icon: Icon(Icons.light_mode_rounded, size: 18),
+                label: Text('Light'),
               ),
-              Expanded(child: Text("Here is your current theme")),
-              IconButton(
-                icon: Icon(_brightnessIcon),
-                iconSize: MediaQuery.of(context).textScaler.scale(24),
-                onPressed: () {
-                  setState(() => _toggleBrightness());
-                },
+              ButtonSegment(
+                value: 0,
+                icon: Icon(Icons.dark_mode_rounded, size: 18),
+                label: Text('Dark'),
+              ),
+              ButtonSegment(
+                value: null,
+                icon: Icon(Icons.contrast_rounded, size: 18),
+                label: Text('Auto'),
               ),
             ],
+            selected: {_brightness},
+            onSelectionChanged: (selection) {
+              _settingsBox.put('brightness', selection.first);
+              setState(() {});
+            },
           ),
         ),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: [
-            _ThemeButton(
-              seedColor: Colors.red,
-              onPressed: () => _settingsBox.put("color", Colors.red),
-            ),
-            _ThemeButton(
-              seedColor: Colors.green,
-              onPressed: () => _settingsBox.put("color", Colors.green),
-            ),
-            _ThemeButton(
-              seedColor: Colors.blue,
-              onPressed: () => _settingsBox.put("color", Colors.blue),
-            ),
-            _ThemeButton(
-              seedColor: Colors.purple,
-              onPressed: () => _settingsBox.put("color", Colors.purple),
-            ),
-            _ThemeButton(
-              seedColor: Colors.orange,
-              onPressed: () => _settingsBox.put("color", Colors.orange),
-            ),
-            _ThemeButton(
-              seedColor: Colors.grey,
-              onPressed: () => _settingsBox.put("color", Colors.grey),
-            ),
-          ],
+        const SizedBox(height: 28),
+        _sectionLabel(context, 'Accent Color'),
+        const SizedBox(height: 14),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: _presetColors.map((seedColor) {
+            final scheme = ColorScheme.fromSeed(
+              seedColor: seedColor,
+              brightness: theme.brightness,
+              dynamicSchemeVariant: DynamicSchemeVariant.neutral,
+            );
+            return _ColorSwatch(
+              color: scheme.primary,
+              isSelected: _currentColor == seedColor,
+              onTap: () {
+                _settingsBox.put('color', seedColor);
+                setState(() {});
+              },
+            );
+          }).toList(),
         ),
       ],
     );
   }
 
-  void _toggleBrightness() {
-    final currentBrightness = _settingsBox.get('brightness');
-    // Brightness: 1 = light, 0 = dark, null = auto
-    // Toggle between light, dark, and auto. 1 > 0 > null > 1 > ...
-    final nb = currentBrightness == 1 ? 0 : (currentBrightness == 0 ? null : 1);
-    _settingsBox.put('brightness', nb);
-  }
-
-  IconData get _brightnessIcon {
-    final brightness = _settingsBox.get('brightness');
-    if (brightness == null) return Icons.radio_button_off;
-    return brightness == 1
-        ? Icons.light_mode_outlined
-        : Icons.dark_mode_outlined;
+  static Widget _sectionLabel(BuildContext context, String text) {
+    return Text(
+      text,
+      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            letterSpacing: 0.3,
+          ),
+    );
   }
 }
 
-class _ThemeButton extends StatelessWidget {
-  final Color seedColor;
-  final Function()? onPressed;
+class _ColorSwatch extends StatelessWidget {
+  final Color color;
+  final bool isSelected;
+  final VoidCallback onTap;
 
-  const _ThemeButton({required this.seedColor, required this.onPressed});
+  const _ColorSwatch({
+    required this.color,
+    required this.isSelected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: seedColor,
-      brightness: Theme.of(context).brightness,
-      dynamicSchemeVariant: DynamicSchemeVariant.neutral,
-    );
-
-    return ElevatedButton(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: colorScheme.surfaceContainer,
-        padding: EdgeInsets.all(16.0),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: color,
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.5),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                  ),
+                ]
+              : null,
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            _colorNames[seedColor] ?? "Custom",
-            style: TextStyle(color: colorScheme.primary),
-          ),
-          Container(
-            height: 20,
-            width: 80,
-            decoration: ShapeDecoration(
-              color: colorScheme.primary,
-              shape: StadiumBorder(),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            height: 20,
-            width: 80,
-            decoration: ShapeDecoration(
-              color: colorScheme.surface,
-              shape: StadiumBorder(),
-            ),
-          ),
-          const SizedBox(height: 8),
-        ],
+        child: isSelected
+            ? const Icon(Icons.check_rounded, color: Colors.white, size: 22)
+            : null,
       ),
     );
   }
-
-  static final _colorNames = {
-    Colors.red: "Red",
-    Colors.blue: "Blue",
-    Colors.purple: "Purple",
-    Colors.orange: "Orange",
-    Colors.green: "Green",
-    Colors.grey: "Grey",
-  };
 }
