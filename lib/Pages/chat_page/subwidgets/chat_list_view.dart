@@ -128,7 +128,7 @@ class _ChatListViewState extends State<ChatListView> {
         ),
         if (_isScrollToBottomButtonVisible)
           Padding(
-            padding: const EdgeInsets.only(bottom: 76),
+            padding: const EdgeInsets.only(bottom: 120),
             child: Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
