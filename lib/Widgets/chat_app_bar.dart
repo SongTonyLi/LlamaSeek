@@ -109,7 +109,7 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
             color: Theme.of(context)
                 .colorScheme
                 .surface
-                .withValues(alpha: 0.2),
+                .withValues(alpha: 0.08),
           ),
         ),
       ),
