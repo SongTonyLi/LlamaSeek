@@ -55,6 +55,8 @@ extension MarkdownStyleSheetExtension on BuildContext {
       ),
       codeblockPadding: const EdgeInsets.all(14),
       codeblockAlign: WrapAlignment.start,
+      // Tables — intrinsic width enables horizontal scroll for wide tables
+      tableColumnWidth: const IntrinsicColumnWidth(),
     );
   }
 }
