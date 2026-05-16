@@ -244,7 +244,7 @@ class _ChatPageState extends State<ChatPage> {
                 onRetry: () => _viewModel.retryLastPrompt(),
               )
             : null,
-        bottomPadding: _viewModel.hasImageAttachments ? 160 : (_shouldShowExpanded ? 110 : 60),
+        bottomPadding: _viewModel.hasImageAttachments ? 160 : (_shouldShowExpanded ? 110 : 80),
         topPadding: isMobile ? MediaQuery.of(context).padding.top + ChatAppBar.mobileOverlayHeight : null,
       );
     }

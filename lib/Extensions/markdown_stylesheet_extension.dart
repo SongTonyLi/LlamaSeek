@@ -76,10 +76,13 @@ extension MarkdownStyleSheetExtension on BuildContext {
       h4Padding: const EdgeInsets.only(top: 8),
       // Block spacing between paragraphs
       blockSpacing: 12,
-      // Blockquote — sky-blue left border with rounded background
+      // Blockquote — sky-blue left border with rounded right corners
       blockquoteDecoration: BoxDecoration(
         color: (isDark ? const Color(0xFF1A3A4A) : const Color(0xFFE8F4FD)),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: const BorderRadius.only(
+          topRight: Radius.circular(10),
+          bottomRight: Radius.circular(10),
+        ),
         border: Border(
           left: BorderSide(
             width: 2.5,
