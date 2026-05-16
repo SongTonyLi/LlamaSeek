@@ -25,10 +25,39 @@ class _ChatPageState extends State<ChatPage> {
   var _crossFadeState = CrossFadeState.showFirst;
   double _scale = 1.0;
 
+  // Input bar expansion state
+  final _inputFocusNode = FocusNode();
+  bool _isInputExpanded = false;
+
+  bool get _shouldShowExpanded => _isInputExpanded || _viewModel.isStreaming;
+
   @override
   void initState() {
     super.initState();
     _viewModel = context.read<ChatPageViewModel>();
+    _inputFocusNode.addListener(_onInputFocusChange);
+  }
+
+  @override
+  void dispose() {
+    _inputFocusNode.removeListener(_onInputFocusChange);
+    _inputFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _onInputFocusChange() {
+    if (!_inputFocusNode.hasFocus &&
+        _viewModel.textFieldController.text.isEmpty &&
+        !_viewModel.isStreaming) {
+      setState(() => _isInputExpanded = false);
+    }
+  }
+
+  void _expandInput() {
+    setState(() => _isInputExpanded = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _inputFocusNode.requestFocus();
+    });
   }
 
   @override
@@ -60,16 +89,10 @@ class _ChatPageState extends State<ChatPage> {
                     filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .surface
-                            .withValues(alpha: 0.18),
+                        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.18),
                         borderRadius: BorderRadius.circular(24.0),
                         border: Border.all(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .outline
-                              .withValues(alpha: 0.12),
+                          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.12),
                           width: 0.5,
                         ),
                         boxShadow: [
@@ -83,17 +106,31 @@ class _ChatPageState extends State<ChatPage> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            child: ChatTextField(
-                              key: ValueKey(_viewModel.currentChat?.id),
-                              controller: _viewModel.textFieldController,
-                              onEditingComplete: _sendMessage,
+                          // TextField — always mounted, slides in/out via height + opacity
+                          ClipRect(
+                            child: AnimatedAlign(
+                              duration: const Duration(milliseconds: 400),
+                              curve: Curves.easeInOutCubic,
+                              alignment: Alignment.bottomCenter,
+                              heightFactor: _shouldShowExpanded ? 1.0 : 0.0,
+                              child: AnimatedOpacity(
+                                opacity: _shouldShowExpanded ? 1.0 : 0.0,
+                                duration: const Duration(milliseconds: 350),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                  child: ChatTextField(
+                                    key: ValueKey(_viewModel.currentChat?.id),
+                                    controller: _viewModel.textFieldController,
+                                    onEditingComplete: _sendMessage,
+                                    focusNode: _inputFocusNode,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
+                          // Button row — always present, "Message" fades in/out
                           Padding(
-                            padding: const EdgeInsets.only(
-                                left: 4, right: 4, bottom: 6),
+                            padding: const EdgeInsets.only(left: 4, right: 4, bottom: 6, top: 4),
                             child: Row(
                               children: [
                                 IconButton(
@@ -105,43 +142,51 @@ class _ChatPageState extends State<ChatPage> {
                                 const SizedBox(width: 2),
                                 IconButton(
                                   icon: Icon(
-                                    _viewModel.webSearchEnabled
-                                        ? Icons.travel_explore
-                                        : Icons.travel_explore_outlined,
+                                    _viewModel.webSearchEnabled ? Icons.travel_explore : Icons.travel_explore_outlined,
                                     size: 20,
-                                    color: _viewModel.webSearchEnabled
-                                        ? Theme.of(context)
-                                            .colorScheme
-                                            .onPrimary
-                                        : null,
+                                    color: _viewModel.webSearchEnabled ? Theme.of(context).colorScheme.onPrimary : null,
                                   ),
                                   padding: const EdgeInsets.all(6),
                                   constraints: const BoxConstraints(),
                                   style: _viewModel.webSearchEnabled
                                       ? IconButton.styleFrom(
-                                          backgroundColor: Theme.of(context)
-                                              .colorScheme
-                                              .primary,
+                                          backgroundColor: Theme.of(context).colorScheme.primary,
                                         )
                                       : null,
-                                  onPressed: () =>
-                                      _viewModel.toggleWebSearch(),
+                                  onPressed: () => _viewModel.toggleWebSearch(),
                                   tooltip: 'Web Search',
                                 ),
-                                const Spacer(),
+                                Expanded(
+                                  child: IgnorePointer(
+                                    ignoring: _shouldShowExpanded,
+                                    child: GestureDetector(
+                                      onTap: _expandInput,
+                                      behavior: HitTestBehavior.opaque,
+                                      child: AnimatedOpacity(
+                                        opacity: _shouldShowExpanded ? 0.0 : 1.0,
+                                        duration: const Duration(milliseconds: 300),
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                          child: Text(
+                                            'Message',
+                                            style: TextStyle(
+                                              color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
                                 if (_viewModel.isStreaming)
                                   IconButton(
-                                    icon: const Icon(
-                                        Icons.stop_rounded, size: 20),
+                                    icon: const Icon(Icons.stop_rounded, size: 20),
                                     padding: const EdgeInsets.all(6),
                                     constraints: const BoxConstraints(),
                                     style: IconButton.styleFrom(
-                                      backgroundColor: Theme.of(context)
-                                          .colorScheme
-                                          .errorContainer,
-                                      foregroundColor: Theme.of(context)
-                                          .colorScheme
-                                          .onErrorContainer,
+                                      backgroundColor: Theme.of(context).colorScheme.errorContainer,
+                                      foregroundColor: Theme.of(context).colorScheme.onErrorContainer,
                                     ),
                                     onPressed: _viewModel.cancelStreaming,
                                   ),
@@ -199,10 +244,8 @@ class _ChatPageState extends State<ChatPage> {
                 onRetry: () => _viewModel.retryLastPrompt(),
               )
             : null,
-        bottomPadding: _viewModel.hasImageAttachments ? 160 : 110,
-        topPadding: isMobile
-            ? MediaQuery.of(context).padding.top + kToolbarHeight
-            : null,
+        bottomPadding: _viewModel.hasImageAttachments ? 160 : (_shouldShowExpanded ? 110 : 60),
+        topPadding: isMobile ? MediaQuery.of(context).padding.top + ChatAppBar.mobileOverlayHeight : null,
       );
     }
   }

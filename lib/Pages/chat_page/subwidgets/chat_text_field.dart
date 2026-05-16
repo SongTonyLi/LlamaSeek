@@ -7,6 +7,7 @@ class ChatTextField extends StatefulWidget {
   final void Function(String)? onChanged;
   final void Function()? onEditingComplete;
 
+  final FocusNode? focusNode;
   final Widget? prefixIcon;
   final Widget? suffixIcon;
 
@@ -15,6 +16,7 @@ class ChatTextField extends StatefulWidget {
     this.controller,
     this.onChanged,
     this.onEditingComplete,
+    this.focusNode,
     this.prefixIcon,
     this.suffixIcon,
   });
@@ -54,6 +56,7 @@ class _ChatTextFieldState extends State<ChatTextField> {
       },
       child: TextField(
         controller: widget.controller,
+        focusNode: widget.focusNode,
         onChanged: widget.onChanged,
         onEditingComplete: widget.onEditingComplete,
         decoration: InputDecoration(

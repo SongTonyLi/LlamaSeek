@@ -77,7 +77,6 @@ class _ChatListViewState extends State<ChatListView> {
   @override
   Widget build(BuildContext context) {
     return Stack(
-      alignment: Alignment.bottomCenter,
       children: [
         CustomScrollView(
           controller: _scrollController,
@@ -127,29 +126,35 @@ class _ChatListViewState extends State<ChatListView> {
           ],
         ),
         if (_isScrollToBottomButtonVisible)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 120),
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOutCubic,
+            right: 16,
+            bottom: _scrollToBottomButtonBottomOffset(),
             child: Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
+                color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.78),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
+                ),
                 boxShadow: [
                   BoxShadow(
-                    color: Theme.of(context).shadowColor.withValues(alpha: 0.12),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+                    color: Theme.of(context).shadowColor.withValues(alpha: 0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
                   ),
                 ],
               ),
-              child: IconButton.filled(
+              child: IconButton(
                 onPressed: _scrollToBottom,
-                icon: const Icon(Icons.keyboard_arrow_down, size: 22),
+                icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
+                tooltip: 'Scroll to latest',
                 style: IconButton.styleFrom(
-                  backgroundColor:
-                      Theme.of(context).colorScheme.surfaceContainerHigh,
-                  foregroundColor:
-                      Theme.of(context).colorScheme.onSurface,
+                  foregroundColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.82),
                   minimumSize: const Size(40, 40),
                   maximumSize: const Size(40, 40),
+                  padding: EdgeInsets.zero,
                 ),
               ),
             ),
@@ -163,10 +168,8 @@ class _ChatListViewState extends State<ChatListView> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
       child: Shimmer.fromColors(
-        baseColor:
-            Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.06),
-        highlightColor:
-            Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.14),
+        baseColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.06),
+        highlightColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.14),
         period: const Duration(milliseconds: 1500),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -219,5 +222,10 @@ class _ChatListViewState extends State<ChatListView> {
       duration: const Duration(milliseconds: 150),
       curve: Curves.easeOut,
     );
+  }
+
+  double _scrollToBottomButtonBottomOffset() {
+    final overlayHeight = widget.bottomPadding ?? 0;
+    return overlayHeight > 0 ? overlayHeight + 12 : 16;
   }
 }
