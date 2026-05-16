@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_markdown_latex/flutter_markdown_latex.dart';
 import 'package:markdown/markdown.dart' as md;
@@ -176,13 +177,34 @@ class _AssistantBubble extends StatefulWidget {
 
 class _AssistantBubbleState extends State<_AssistantBubble> {
   bool _wasStreaming = false;
+  String _throttledContent = '';
+  bool _updatePending = false;
 
   @override
   void didUpdateWidget(_AssistantBubble old) {
     super.didUpdateWidget(old);
     if (old.isStreaming && !widget.isStreaming) {
       _wasStreaming = true;
+      _throttledContent = widget.message.content;
+      _updatePending = false;
+    } else if (widget.isStreaming) {
+      _scheduleContentUpdate();
+    } else {
+      _throttledContent = widget.message.content;
     }
+  }
+
+  void _scheduleContentUpdate() {
+    if (_updatePending) return;
+    _updatePending = true;
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() {
+          _throttledContent = widget.message.content;
+          _updatePending = false;
+        });
+      }
+    });
   }
 
   @override
@@ -216,18 +238,13 @@ class _AssistantBubbleState extends State<_AssistantBubble> {
     );
   }
 
-  /// Chooses between animated streaming text or full markdown.
   Widget _buildContent(BuildContext context, String data) {
-    if (widget.isStreaming && data.isNotEmpty) {
-      return StreamingTextRenderer(
-        content: data,
-        baseStyle: Theme.of(context).textTheme.bodyLarge,
-      );
-    }
     return widget.buildMarkdown(context, data);
   }
 
   Widget _buildMessageContent(BuildContext context) {
+    final content = widget.isStreaming ? _throttledContent : widget.message.content;
+
     if (widget.message.thinking != null &&
         widget.message.thinking!.isNotEmpty) {
       return Column(
@@ -235,17 +252,17 @@ class _AssistantBubbleState extends State<_AssistantBubble> {
         children: [
           ThinkBlockWidget(
             content: widget.message.thinking!,
-            isComplete: widget.message.content.isNotEmpty,
+            isComplete: content.isNotEmpty,
           ),
-          if (widget.message.content.isNotEmpty) ...[
+          if (content.isNotEmpty) ...[
             const SizedBox(height: 4),
-            _buildContent(context, widget.message.content),
+            _buildContent(context, content),
           ],
         ],
       );
     }
 
-    final parsed = ThinkBlockParser.tryParse(widget.message.content);
+    final parsed = ThinkBlockParser.tryParse(content);
 
     if (parsed != null) {
       return Column(
@@ -263,7 +280,7 @@ class _AssistantBubbleState extends State<_AssistantBubble> {
       );
     }
 
-    return _buildContent(context, widget.message.content);
+    return _buildContent(context, content);
   }
 }
 
