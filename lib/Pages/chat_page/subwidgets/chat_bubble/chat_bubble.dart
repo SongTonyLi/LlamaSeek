@@ -83,8 +83,8 @@ class _ChatBubbleBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(
-        left: isSentFromUser ? 48.0 : 8.0,
-        right: isSentFromUser ? 8.0 : 8.0,
+        left: isSentFromUser ? 48.0 : 14.0,
+        right: isSentFromUser ? 8.0 : 14.0,
         top: 3.0,
         bottom: 3.0,
       ),
