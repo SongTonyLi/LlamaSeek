@@ -40,10 +40,11 @@ class ChatBubbleActions {
     chatProvider.regenerateMessage(message);
   }
 
-  void handleEdit(BuildContext context) {
+  /// Opens edit sheet. Returns the new text if saved, null if cancelled.
+  Future<String?> handleEdit(BuildContext context) async {
     final chatProvider = Provider.of<ChatProvider>(context, listen: false);
 
-    showModalBottomSheet(
+    return await showModalBottomSheet<String?>(
       context: context,
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.9,

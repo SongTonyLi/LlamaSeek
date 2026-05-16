@@ -98,9 +98,13 @@ class _ChatBubbleBody extends StatelessWidget {
                     .toList(),
               ),
             ),
-          if (isSentFromUser)
-            _UserBubble(message: message, buildMarkdown: _buildMarkdown)
-          else
+          if (isSentFromUser) ...[
+            _UserBubble(message: message, buildMarkdown: _buildMarkdown),
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: _UserActionButtons(message: message),
+            ),
+          ] else
             _AssistantBubble(
               message: message,
               isStreaming: isStreaming,
@@ -312,6 +316,43 @@ class _AssistantBubbleState extends State<_AssistantBubble> {
     }
 
     return _buildContent(context, content);
+  }
+}
+
+/// Copy and Edit buttons shown below user messages.
+class _UserActionButtons extends StatelessWidget {
+  final OllamaMessage message;
+
+  const _UserActionButtons({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final actions = ChatBubbleActions(message);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _ActionChip(
+          icon: Icons.copy_outlined,
+          label: 'Copy',
+          color: colorScheme.onSurfaceVariant,
+          onTap: actions.handleCopy,
+        ),
+        const SizedBox(width: 8),
+        _ActionChip(
+          icon: Icons.edit_outlined,
+          label: 'Edit',
+          color: colorScheme.onSurfaceVariant,
+          onTap: () async {
+            final result = await actions.handleEdit(context);
+            if (result != null && context.mounted) {
+              actions.handleRegenerate(context);
+            }
+          },
+        ),
+      ],
+    );
   }
 }
 
