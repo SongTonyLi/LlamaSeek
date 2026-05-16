@@ -84,6 +84,8 @@ class _ChatPageState extends State<ChatPage> {
                         children: [
                           IconButton(
                             icon: const Icon(Icons.add, size: 22),
+                            padding: const EdgeInsets.only(left: 8, right: 2),
+                            constraints: const BoxConstraints(),
                             onPressed: _handleAttachmentButton,
                           ),
                           IconButton(
@@ -96,6 +98,8 @@ class _ChatPageState extends State<ChatPage> {
                                   ? Theme.of(context).colorScheme.onPrimary
                                   : null,
                             ),
+                            padding: const EdgeInsets.only(left: 2, right: 4),
+                            constraints: const BoxConstraints(),
                             style: _viewModel.webSearchEnabled
                                 ? IconButton.styleFrom(
                                     backgroundColor:
@@ -112,8 +116,15 @@ class _ChatPageState extends State<ChatPage> {
                               onEditingComplete: _sendMessage,
                             ),
                           ),
-                          if (_buildTextFieldSuffixIcon() != null)
-                            _buildTextFieldSuffixIcon()!
+                          if (_viewModel.isStreaming)
+                            IconButton(
+                              icon: const Icon(Icons.stop_rounded, size: 20),
+                              style: IconButton.styleFrom(
+                                backgroundColor: Theme.of(context).colorScheme.errorContainer,
+                                foregroundColor: Theme.of(context).colorScheme.onErrorContainer,
+                              ),
+                              onPressed: _viewModel.cancelStreaming,
+                            )
                           else
                             const SizedBox(width: 8),
                         ],
@@ -202,30 +213,6 @@ class _ChatPageState extends State<ChatPage> {
       );
     } else {
       return const SizedBox();
-    }
-  }
-
-  Widget? _buildTextFieldSuffixIcon() {
-    if (_viewModel.isStreaming) {
-      return IconButton(
-        icon: const Icon(Icons.stop_rounded, size: 20),
-        style: IconButton.styleFrom(
-          backgroundColor: Theme.of(context).colorScheme.errorContainer,
-          foregroundColor: Theme.of(context).colorScheme.onErrorContainer,
-        ),
-        onPressed: _viewModel.cancelStreaming,
-      );
-    } else if (_viewModel.hasText) {
-      return IconButton(
-        icon: const Icon(Icons.arrow_upward_rounded, size: 20),
-        style: IconButton.styleFrom(
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          foregroundColor: Theme.of(context).colorScheme.onPrimary,
-        ),
-        onPressed: _sendMessage,
-      );
-    } else {
-      return null;
     }
   }
 
