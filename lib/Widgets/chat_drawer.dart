@@ -14,35 +14,45 @@ class ChatDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Drawer(
       backgroundColor: Colors.transparent,
-      child: ClipRRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-          child: Container(
-            color: Theme.of(context)
-                .colorScheme
-                .surface
-                .withValues(alpha: 0.75),
-            child: SafeArea(
-              child: Column(
-                children: [
-                  const Expanded(child: ChatNavigationDrawer()),
-                  Container(
-                    alignment: Alignment.centerLeft,
-                    padding: const EdgeInsets.fromLTRB(28, 16, 28, 10),
-                    child: IconButton(
-                      icon: const Icon(Icons.settings_outlined),
-                      onPressed: () {
-                        if (ResponsiveBreakpoints.of(context).isMobile) {
-                          Navigator.pop(context);
-                        }
-
-                        Navigator.pushNamed(context, '/settings');
-                      },
-                    ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20.0),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: colorScheme.surface.withValues(alpha: 0.60),
+                  borderRadius: BorderRadius.circular(20.0),
+                  border: Border.all(
+                    color: colorScheme.outline.withValues(alpha: 0.15),
+                    width: 0.5,
                   ),
-                ],
+                ),
+                child: Column(
+                  children: [
+                    const Expanded(child: ChatNavigationDrawer()),
+                    Container(
+                      alignment: Alignment.centerLeft,
+                      padding: const EdgeInsets.fromLTRB(28, 16, 28, 10),
+                      child: IconButton(
+                        icon: const Icon(Icons.settings_outlined),
+                        onPressed: () {
+                          if (ResponsiveBreakpoints.of(context).isMobile) {
+                            Navigator.pop(context);
+                          }
+
+                          Navigator.pushNamed(context, '/settings');
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -385,8 +395,9 @@ class _ChatDrawerTile extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 2.0),
         child: Material(
-          color:
-              isSelected ? colorScheme.secondaryContainer : Colors.transparent,
+          color: isSelected
+              ? colorScheme.secondaryContainer.withValues(alpha: 0.45)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(28.0),
           child: InkWell(
             borderRadius: BorderRadius.circular(28.0),

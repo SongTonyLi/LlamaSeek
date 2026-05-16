@@ -38,11 +38,12 @@ class _LlamaSeekMobileMainPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: ChatAppBar(),
-      body: SafeArea(top: false, child: ChatPage()),
-      drawer: ChatDrawer(),
+      appBar: const ChatAppBar(),
+      body: const SafeArea(top: false, child: ChatPage()),
+      drawer: const ChatDrawer(),
+      drawerScrimColor: Colors.black.withValues(alpha: 0.15),
     );
   }
 }
