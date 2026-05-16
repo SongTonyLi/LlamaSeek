@@ -1,5 +1,3 @@
-import 'dart:io' show Platform;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -77,11 +75,7 @@ class _ChatTextFieldState extends State<ChatTextField> {
     );
   }
 
-  TextInputAction get _textInputAction {
-    return Platform.isIOS || Platform.isAndroid
-        ? TextInputAction.newline
-        : TextInputAction.send;
-  }
+  TextInputAction get _textInputAction => TextInputAction.send;
 
   String _readTextFieldState() {
     return _textFieldBucket.readState(context, identifier: widget.key) ?? '';
