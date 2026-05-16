@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_markdown_latex/flutter_markdown_latex.dart';
 import 'package:markdown/markdown.dart' as md;
+import 'package:llamaseek/Extensions/code_syntax_highlighter.dart';
 import 'package:llamaseek/Extensions/markdown_stylesheet_extension.dart';
 import 'package:llamaseek/Models/ollama_message.dart';
 import 'package:url_launcher/url_launcher_string.dart';
@@ -114,6 +115,9 @@ class _ChatBubbleBody extends StatelessWidget {
       selectable: true,
       softLineBreak: true,
       styleSheet: context.markdownStyleSheet,
+      syntaxHighlighter: CodeSyntaxHighlighter(
+        brightness: Theme.of(context).brightness,
+      ),
       extensionSet: md.ExtensionSet.gitHubFlavored,
       builders: {
         'latex': LatexElementBuilder(),
