@@ -13,7 +13,7 @@ import 'chat_bubble_image.dart';
 import 'chat_bubble_menu.dart';
 import 'chat_bubble_think_block.dart' show ThinkBlockParser, ThinkBlockWidget;
 import 'streaming_llama.dart';
-import 'streaming_text_renderer.dart';
+
 
 class ChatBubble extends StatelessWidget {
   final OllamaMessage message;
