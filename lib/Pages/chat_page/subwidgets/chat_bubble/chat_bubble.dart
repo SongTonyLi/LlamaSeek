@@ -173,40 +173,15 @@ class _AssistantBubble extends StatefulWidget {
   State<_AssistantBubble> createState() => _AssistantBubbleState();
 }
 
-class _AssistantBubbleState extends State<_AssistantBubble>
-    with SingleTickerProviderStateMixin {
-  bool _showRestingLlama = false;
-  late final AnimationController _llamaFade;
-
-  @override
-  void initState() {
-    super.initState();
-    _llamaFade = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    );
-  }
+class _AssistantBubbleState extends State<_AssistantBubble> {
+  bool _wasStreaming = false;
 
   @override
   void didUpdateWidget(_AssistantBubble old) {
     super.didUpdateWidget(old);
     if (old.isStreaming && !widget.isStreaming) {
-      setState(() => _showRestingLlama = true);
-      _llamaFade.value = 1.0;
-      Future.delayed(const Duration(milliseconds: 1500), () {
-        if (mounted) {
-          _llamaFade.reverse().then((_) {
-            if (mounted) setState(() => _showRestingLlama = false);
-          });
-        }
-      });
+      _wasStreaming = true;
     }
-  }
-
-  @override
-  void dispose() {
-    _llamaFade.dispose();
-    super.dispose();
   }
 
   @override
@@ -217,14 +192,11 @@ class _AssistantBubbleState extends State<_AssistantBubble>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildMessageContent(context),
-          // Resting llama after streaming ends
-          if (_showRestingLlama)
-            FadeTransition(
-              opacity: _llamaFade,
-              child: const Padding(
-                padding: EdgeInsets.only(top: 4, left: 2),
-                child: StreamingLlama(isRunning: false),
-              ),
+          // Llama on its own line: running during streaming, resting after
+          if (widget.isStreaming || _wasStreaming)
+            Padding(
+              padding: const EdgeInsets.only(top: 6, left: 2),
+              child: StreamingLlama(isRunning: widget.isStreaming),
             ),
           // Smoothly reveal action buttons when streaming ends
           AnimatedSize(

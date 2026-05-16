@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'streaming_llama.dart';
 
 /// Renders streaming text with per-word fade-in animation.
 ///
@@ -16,13 +15,11 @@ import 'streaming_llama.dart';
 class StreamingTextRenderer extends StatefulWidget {
   final String content;
   final TextStyle? baseStyle;
-  final bool showCursor;
 
   const StreamingTextRenderer({
     super.key,
     required this.content,
     this.baseStyle,
-    this.showCursor = true,
   });
 
   @override
@@ -148,11 +145,6 @@ class _StreamingTextRendererState extends State<StreamingTextRenderer>
             children: [
               if (_stableContent.isNotEmpty) TextSpan(text: _stableContent),
               for (final w in _animatingWords) _span(w, style, baseColor, now),
-              if (widget.showCursor)
-                const WidgetSpan(
-                  alignment: PlaceholderAlignment.middle,
-                  child: StreamingLlama(),
-                ),
             ],
           ),
         );

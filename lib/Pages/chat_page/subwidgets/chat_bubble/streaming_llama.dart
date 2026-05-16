@@ -1,8 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 
-/// A tiny animated llama that runs inline at the end of streaming text,
-/// then rests when generation is complete.
+/// A tiny animated llama that runs while streaming, then rests when done.
 class StreamingLlama extends StatefulWidget {
   final bool isRunning;
 
@@ -21,7 +20,7 @@ class _StreamingLlamaState extends State<StreamingLlama>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: widget.isRunning ? 350 : 2000),
+      duration: Duration(milliseconds: widget.isRunning ? 300 : 2500),
     )..repeat();
   }
 
@@ -30,7 +29,7 @@ class _StreamingLlamaState extends State<StreamingLlama>
     super.didUpdateWidget(old);
     if (widget.isRunning != old.isRunning) {
       _controller.duration =
-          Duration(milliseconds: widget.isRunning ? 350 : 2000);
+          Duration(milliseconds: widget.isRunning ? 300 : 2500);
       _controller.repeat();
     }
   }
@@ -47,11 +46,11 @@ class _StreamingLlamaState extends State<StreamingLlama>
       animation: _controller,
       builder: (context, _) {
         return CustomPaint(
-          size: const Size(28, 18),
+          size: const Size(22, 16),
           painter: _LlamaPainter(
             phase: _controller.value,
             isRunning: widget.isRunning,
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
           ),
         );
       },
@@ -73,115 +72,111 @@ class _LlamaPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final fill = Paint()..color = color;
-    final bounce = isRunning ? sin(phase * 2 * pi) * 1.4 : 0.0;
-    final breathe = !isRunning ? sin(phase * 2 * pi) * 0.3 : 0.0;
-    final by = bounce + breathe; // combined vertical offset
+    final bounce = isRunning ? sin(phase * 2 * pi) * 1.2 : 0.0;
+    final breathe = !isRunning ? sin(phase * 2 * pi) * 0.25 : 0.0;
+    final by = bounce + breathe;
 
-    // ── dust particles (running only) ──
+    // ── dust (running only) ──
     if (isRunning) {
       for (int i = 0; i < 3; i++) {
         final p = (phase + i * 0.33) % 1.0;
         canvas.drawCircle(
-          Offset(6 - p * 9, 14.5 + by + p * 2),
-          0.5 + p * 1.1,
-          Paint()..color = color.withValues(alpha: (1.0 - p) * 0.22),
+          Offset(4 - p * 7, 13 + by + p * 1.5),
+          0.5 + p * 0.9,
+          Paint()..color = color.withValues(alpha: (1.0 - p) * 0.2),
         );
       }
     }
 
-    // ── body ──
+    // ── fluffy body (large, round — the dominant shape) ──
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromLTWH(6, 8 + by, 11, 4.8),
-        const Radius.circular(2.4),
+        Rect.fromLTWH(4, 5.5 + by, 10, 5.5),
+        const Radius.circular(2.8),
       ),
       fill,
     );
 
-    // ── neck ──
-    final neck = Path()
-      ..moveTo(15.5, 8.5 + by)
-      ..quadraticBezierTo(17, 5.5 + by, 18, 4 + by);
-    canvas.drawPath(
-      neck,
-      Paint()
-        ..color = color
-        ..strokeWidth = 2.8
-        ..strokeCap = StrokeCap.round
-        ..style = PaintingStyle.stroke,
-    );
-
-    // ── head ──
-    canvas.drawOval(
-      Rect.fromCenter(center: Offset(19.5, 3 + by), width: 5, height: 3.6),
+    // ── neck (SHORT and thick — not a giraffe!) ──
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(12.5, 3.5 + by, 2.8, 4),
+        const Radius.circular(1.4),
+      ),
       fill,
     );
 
-    // ── ears ──
+    // ── head (round, close to body) ──
+    canvas.drawOval(
+      Rect.fromCenter(center: Offset(16, 3 + by), width: 5, height: 4.2),
+      fill,
+    );
+
+    // ── ears (upright, banana-shaped) ──
     final ear = Paint()
       ..color = color
       ..strokeWidth = 1.3
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
-    canvas.drawLine(Offset(18.2, 1.5 + by), Offset(17.6, 0 + by), ear);
-    canvas.drawLine(Offset(20.5, 1 + by), Offset(21, -0.5 + by), ear);
+    // left ear
+    final leftEar = Path()
+      ..moveTo(14.8, 1.5 + by)
+      ..quadraticBezierTo(14.2, -0.5 + by, 14.8, -0.2 + by);
+    canvas.drawPath(leftEar, ear);
+    // right ear
+    final rightEar = Path()
+      ..moveTo(16.8, 1 + by)
+      ..quadraticBezierTo(17.2, -1 + by, 17.8, -0.2 + by);
+    canvas.drawPath(rightEar, ear);
 
     // ── eye ──
     if (isRunning) {
       canvas.drawCircle(
-        Offset(21, 2.7 + by),
-        0.7,
-        Paint()..color = Colors.white.withValues(alpha: 0.75),
+        Offset(17.5, 2.5 + by), 0.7,
+        Paint()..color = Colors.white.withValues(alpha: 0.7),
       );
     } else {
-      // resting: happy squint
-      canvas.drawLine(
-        Offset(20.3, 2.8 + by),
-        Offset(21.5, 2.5 + by),
-        Paint()
-          ..color = Colors.white.withValues(alpha: 0.55)
-          ..strokeWidth = 0.7
-          ..strokeCap = StrokeCap.round,
-      );
+      // resting: happy closed eye
+      final eyePath = Path()
+        ..moveTo(16.8, 2.8 + by)
+        ..quadraticBezierTo(17.5, 2.2 + by, 18.2, 2.8 + by);
+      canvas.drawPath(eyePath, Paint()
+        ..color = Colors.white.withValues(alpha: 0.5)
+        ..strokeWidth = 0.7
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round);
     }
 
-    // ── legs ──
+    // ── legs (short and stubby) ──
     final leg = Paint()
       ..color = color
-      ..strokeWidth = 1.6
+      ..strokeWidth = 1.5
       ..strokeCap = StrokeCap.round;
-    const footY = 17.0;
+    const footY = 14.5;
 
     if (isRunning) {
       final lp = phase * 2 * pi;
-      _leg(canvas, 15, 12.5 + by, sin(lp) * 3.5, footY, leg);
-      _leg(canvas, 13.2, 12.5 + by, sin(lp + pi) * 3.5, footY, leg);
-      _leg(canvas, 9.5, 12.5 + by, sin(lp + pi * 0.6) * 3, footY, leg);
-      _leg(canvas, 7.8, 12.5 + by, sin(lp + pi * 1.6) * 3, footY, leg);
+      _leg(canvas, 12, 10.5 + by, sin(lp) * 2.8, footY, leg);
+      _leg(canvas, 10.5, 10.5 + by, sin(lp + pi) * 2.8, footY, leg);
+      _leg(canvas, 7, 10.5 + by, sin(lp + pi * 0.6) * 2.5, footY, leg);
+      _leg(canvas, 5.5, 10.5 + by, sin(lp + pi * 1.6) * 2.5, footY, leg);
     } else {
-      _leg(canvas, 15, 12.5 + by, 0, footY, leg);
-      _leg(canvas, 13.2, 12.5 + by, 0, footY, leg);
-      _leg(canvas, 9.5, 12.5 + by, 0, footY, leg);
-      _leg(canvas, 7.8, 12.5 + by, 0, footY, leg);
+      _leg(canvas, 12, 10.5 + by, 0, footY, leg);
+      _leg(canvas, 10.5, 10.5 + by, 0, footY, leg);
+      _leg(canvas, 7, 10.5 + by, 0, footY, leg);
+      _leg(canvas, 5.5, 10.5 + by, 0, footY, leg);
     }
 
-    // ── tail ──
-    final tailWag = isRunning ? sin(phase * 4 * pi) * 2.5 : sin(phase * 2 * pi) * 0.5;
-    final tail = Path()
-      ..moveTo(6, 9.5 + by)
-      ..quadraticBezierTo(3.5, 7 + by + tailWag, 2.5, 8.5 + by + tailWag * 0.4);
-    canvas.drawPath(
-      tail,
-      Paint()
-        ..color = color
-        ..strokeWidth = 1.4
-        ..strokeCap = StrokeCap.round
-        ..style = PaintingStyle.stroke,
+    // ── tail (small puff) ──
+    final tailWag = isRunning ? sin(phase * 4 * pi) * 1.8 : sin(phase * 2 * pi) * 0.3;
+    canvas.drawCircle(
+      Offset(3.5, 6.5 + by + tailWag * 0.3), 1.5,
+      Paint()..color = color.withValues(alpha: 0.6),
     );
   }
 
-  void _leg(Canvas canvas, double x, double top, double offset, double foot, Paint p) {
-    canvas.drawLine(Offset(x, top), Offset(x + offset, foot), p);
+  void _leg(Canvas c, double x, double top, double off, double foot, Paint p) {
+    c.drawLine(Offset(x, top), Offset(x + off, foot), p);
   }
 
   @override
