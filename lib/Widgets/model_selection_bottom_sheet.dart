@@ -491,9 +491,16 @@ Future<OllamaModel?> showModelSelectionBottomSheet({
                   color: Theme.of(context)
                       .colorScheme
                       .surface
-                      .withValues(alpha: 0.82),
+                      .withValues(alpha: 0.78),
                   borderRadius:
                       const BorderRadius.vertical(top: Radius.circular(20)),
+                  border: Border.all(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .outline
+                        .withValues(alpha: 0.15),
+                    width: 0.5,
+                  ),
                 ),
                 child: ModelSelectionBottomSheet(
                   title: title,
