@@ -644,14 +644,21 @@ class _SmartLatexBuilder extends MarkdownElementBuilder {
     final isDisplay = element.attributes['MathStyle'] == 'display';
     final rawSource = isDisplay ? '\$\$$text\$\$' : '\$$text\$';
 
+    // Ensure text color is explicit — flutter_math_fork can render
+    // invisible text when preferredStyle has no color (e.g. in tables).
+    final effectiveColor = preferredStyle?.color ??
+        Theme.of(context).textTheme.bodyMedium?.color;
+    final mathTextStyle = (preferredStyle ?? const TextStyle())
+        .copyWith(color: effectiveColor);
+
     final mathWidget = Math.tex(
       text,
       mathStyle: isDisplay ? MathStyle.display : MathStyle.text,
-      textStyle: preferredStyle,
+      textStyle: mathTextStyle,
       onErrorFallback: (_) => _LatexSourceFallback(
         rawSource: rawSource,
         isDisplay: isDisplay,
-        preferredStyle: preferredStyle,
+        preferredStyle: mathTextStyle,
       ),
     );
 
@@ -665,11 +672,9 @@ class _SmartLatexBuilder extends MarkdownElementBuilder {
       );
     }
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      clipBehavior: Clip.antiAlias,
-      child: mathWidget,
-    );
+    // Return inline math directly — SingleChildScrollView breaks
+    // IntrinsicColumnWidth in tables (reports zero width → invisible cells).
+    return mathWidget;
   }
 }
 
